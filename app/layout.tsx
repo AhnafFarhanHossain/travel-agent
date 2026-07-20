@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("h-full", "antialiased", dmSans.variable, "font-dm-sans")}>
+    <html lang="en" suppressHydrationWarning className={cn("h-full", "antialiased", dmSans.variable, "font-dm-sans")}>
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <main>{children}</main>

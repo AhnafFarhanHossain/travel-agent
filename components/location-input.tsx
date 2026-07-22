@@ -7,11 +7,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MapPinIcon, XIcon, Loader2Icon } from "lucide-react";
 import Image from "next/image";
+import { useContext } from "react";
+import { TripContext } from "@/context/trip-details";
 
 export default function LocationSearch() {
+  const { location, setLocation } = useContext(TripContext);
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<LocationResult[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationResult | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +46,7 @@ export default function LocationSearch() {
   const handleSelect = (location: LocationResult) => {
     setSelectedLocation(location);
     setSearchTerm(location.formatted);
+    setLocation(location.formatted);
     setResults([]);
   };
 
@@ -98,15 +103,25 @@ export default function LocationSearch() {
                   aria-selected={false}
                   className="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm transition-colors hover:bg-accent/50 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-border"
                 >
-                  <Image src={item.flag} alt={item.country} width={12} height={6} className="rounded-xs" />
+                  <Image
+                    src={item.flag}
+                    alt={item.country}
+                    width={12}
+                    height={6}
+                    className="rounded-xs"
+                  />
                   <span className="flex-1 truncate">
                     <span className="font-medium">{item.city}</span>
-                    <span className="text-muted-foreground">, {item.country}</span>
+                    <span className="text-muted-foreground">
+                      , {item.country}
+                    </span>
                   </span>
                 </li>
               ))
             ) : (
-              <li className="px-3 py-2.5 text-sm text-muted-foreground">No results found</li>
+              <li className="px-3 py-2.5 text-sm text-muted-foreground">
+                No results found
+              </li>
             )}
           </ul>
         )}

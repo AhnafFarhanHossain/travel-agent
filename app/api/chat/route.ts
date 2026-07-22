@@ -1,13 +1,12 @@
+import { auth } from "@/auth";
 import { google } from "@ai-sdk/google";
-import {
-  UIMessage,
-  streamText,
-  convertToModelMessages,
-  createUIMessageStreamResponse,
-  toUIMessageStream,
-} from "ai";
+import { UIMessage, streamText, convertToModelMessages, createUIMessageStreamResponse, toUIMessageStream } from "ai";
 
 export async function POST(req: Request) {
+  const session = await auth();
+  if (!session) {
+    return Response.json({ message: "Unauthorized. Please log in to access chat." }, { status: 401 });
+  }
   try {
     const { messages }: { messages: UIMessage[] } = await req.json();
 

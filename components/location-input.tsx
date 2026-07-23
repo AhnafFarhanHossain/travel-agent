@@ -12,11 +12,22 @@ import { TripContext } from "@/context/trip-details";
 
 export default function LocationSearch() {
   const { location, setLocation } = useContext(TripContext);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(location || "");
   const [results, setResults] = useState<LocationResult[]>([]);
   const [selectedLocation, setSelectedLocation] =
-    useState<LocationResult | null>(null);
+    useState<LocationResult | null>(
+      location
+        ? { formatted: location, city: location, country: "", flag: "" }
+        : null
+    );
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (location && !selectedLocation) {
+      setSearchTerm(location);
+      setSelectedLocation({ formatted: location, city: location, country: "", flag: "" });
+    }
+  }, [location, selectedLocation]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (selectedLocation) return;
@@ -43,16 +54,17 @@ export default function LocationSearch() {
     return () => clearTimeout(timer);
   }, [searchTerm, selectedLocation]);
 
-  const handleSelect = (location: LocationResult) => {
-    setSelectedLocation(location);
-    setSearchTerm(location.formatted);
-    setLocation(location.formatted);
+  const handleSelect = (loc: LocationResult) => {
+    setSelectedLocation(loc);
+    setSearchTerm(loc.formatted);
+    setLocation(loc.formatted);
     setResults([]);
   };
 
   const handleClearSelection = () => {
     setSelectedLocation(null);
     setSearchTerm("");
+    setLocation("");
     setResults([]);
   };
 

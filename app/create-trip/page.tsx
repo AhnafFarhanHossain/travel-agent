@@ -4,12 +4,15 @@ import { useContext, useState, useCallback, useMemo } from "react";
 import { use } from "react";
 import { Header } from "@/components/header";
 import LocationSearch from "@/components/location-input";
+import PeopleInput from "@/components/people-input";
+import BudgetInput from "@/components/budget-input";
+import PreferencesInput from "@/components/preferences-input";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { TripContext } from "@/context/trip-details";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { CheckIcon, ArrowRightIcon, RotateCcwIcon } from "lucide-react";
+import { CheckIcon, ArrowRightIcon, RotateCcwIcon, SparklesIcon } from "lucide-react";
 
 const STEPS = [
   { key: "", label: "Location" },
@@ -238,6 +241,111 @@ function SelectDuration() {
   );
 }
 
+function SelectPeople() {
+  const { location } = useContext(TripContext);
+
+  return (
+    <div className="flex flex-col items-center gap-8">
+      <div className="text-center">
+        <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
+          Who's coming on this trip?
+        </h1>
+        {location && (
+          <p className="mt-1.5 text-sm text-muted-foreground">{location}</p>
+        )}
+      </div>
+
+      <div className="w-full max-w-md">
+        <PeopleInput />
+      </div>
+
+      <div className="flex w-full max-w-sm gap-3">
+        <Link href="/create-trip?step=selectDuration" className="flex-1">
+          <Button className="w-full" variant="outline" type="button">
+            Back
+          </Button>
+        </Link>
+        <Link href="/create-trip?step=budget" className="flex-1">
+          <Button className="w-full gap-2" variant="default" type="button">
+            Next
+            <ArrowRightIcon className="size-3.5" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function SelectBudget() {
+  const { location } = useContext(TripContext);
+
+  return (
+    <div className="flex flex-col items-center gap-8">
+      <div className="text-center">
+        <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
+          What is your trip budget?
+        </h1>
+        {location && (
+          <p className="mt-1.5 text-sm text-muted-foreground">{location}</p>
+        )}
+      </div>
+
+      <div className="w-full max-w-md">
+        <BudgetInput />
+      </div>
+
+      <div className="flex w-full max-w-sm gap-3">
+        <Link href="/create-trip?step=people" className="flex-1">
+          <Button className="w-full" variant="outline" type="button">
+            Back
+          </Button>
+        </Link>
+        <Link href="/create-trip?step=preferences" className="flex-1">
+          <Button className="w-full gap-2" variant="default" type="button">
+            Next
+            <ArrowRightIcon className="size-3.5" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function SelectPreferences() {
+  const { location } = useContext(TripContext);
+
+  return (
+    <div className="flex flex-col items-center gap-8">
+      <div className="text-center">
+        <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
+          What are your trip preferences?
+        </h1>
+        {location && (
+          <p className="mt-1.5 text-sm text-muted-foreground">{location}</p>
+        )}
+      </div>
+
+      <div className="w-full max-w-lg">
+        <PreferencesInput />
+      </div>
+
+      <div className="flex w-full max-w-sm gap-3">
+        <Link href="/create-trip?step=budget" className="flex-1">
+          <Button className="w-full" variant="outline" type="button">
+            Back
+          </Button>
+        </Link>
+        <Link href="/chat" className="flex-1">
+          <Button className="w-full gap-2" variant="default" type="button">
+            Generate Trip
+            <SparklesIcon className="size-3.5" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function StepPlaceholder({
   title,
   description,
@@ -285,23 +393,11 @@ export default function CreateTripPage({
           {step === "selectDuration" ? (
             <SelectDuration />
           ) : step === "people" ? (
-            <StepPlaceholder
-              title="How many people?"
-              description="Coming soon..."
-              prevStep="selectDuration"
-            />
+            <SelectPeople />
           ) : step === "budget" ? (
-            <StepPlaceholder
-              title="What is your budget?"
-              description="Coming soon..."
-              prevStep="people"
-            />
+            <SelectBudget />
           ) : step === "preferences" ? (
-            <StepPlaceholder
-              title="Any preferences?"
-              description="Coming soon..."
-              prevStep="budget"
-            />
+            <SelectPreferences />
           ) : (
             <div className="flex flex-col items-center gap-8">
               <div className="text-center">

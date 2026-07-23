@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@teispace/next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { TripProvider } from "@/context/trip-details";
+import { SessionProvider } from "next-auth/react";
 
 const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"] });
 
@@ -26,11 +27,13 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", dmSans.variable, "font-dm-sans")}
     >
       <body className="min-h-full flex flex-col">
-        <TripProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <main>{children}</main>
-          </ThemeProvider>
-        </TripProvider>
+        <SessionProvider>
+          <TripProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <main>{children}</main>
+            </ThemeProvider>
+          </TripProvider>
+        </SessionProvider>
         <Toaster />
       </body>
     </html>

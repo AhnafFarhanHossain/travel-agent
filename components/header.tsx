@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { CompassIcon, UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { logOut } from "@/app/dashboard/actions/logout";
 
 export function Header() {
+  const { data: session } = useSession();
+
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
@@ -21,11 +24,13 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <form action={logOut}>
-            <Button variant="destructive" type="submit" size="sm">
-              Log out
-            </Button>
-          </form>
+          {session ? (
+            <form action={logOut}>
+              <Button variant="destructive" type="submit" size="sm">
+                Log out
+              </Button>
+            </form>
+          ) : null}
           <Avatar size="sm">
             <AvatarFallback>
               <UserIcon className="size-4" />
@@ -36,3 +41,4 @@ export function Header() {
     </header>
   );
 }
+

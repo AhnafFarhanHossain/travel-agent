@@ -170,4 +170,4 @@ const TripProvider = ({ children }: { children: React.ReactNode }) => {
   )
 }
 
-export { TripContext, TripProvider };
+export { TripContext, TripProvider, TripPreferences, FoodPreferences, PreferStayingIn };

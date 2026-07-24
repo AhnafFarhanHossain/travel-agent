@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
     // Send the message to the AI SDK
     const result = streamText({
-      model: google.languageModel("gemini-3.5-flash"),
+      model: google(process.env.LANGUAGE_MODEL as string),
       messages: await convertToModelMessages(messages),
     });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useCallback, useMemo } from "react";
+import { useContext, useCallback, useMemo, useState } from "react";
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
@@ -10,7 +10,10 @@ import BudgetInput from "@/components/budget-input";
 import PreferencesInput from "@/components/preferences-input";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { TripContext } from "@/context/trip-details";
+import { generateTrip } from "@/lib/api/generateTrip";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import {
@@ -19,14 +22,20 @@ import {
   RotateCcwIcon,
   SparklesIcon,
   AlertCircleIcon,
+  Loader2Icon,
+  MapPinIcon,
+  CalendarIcon,
+  UsersIcon,
+  WalletIcon,
+  CompassIcon,
 } from "lucide-react";
 
 const STEPS = [
-  { key: "", label: "Location" },
-  { key: "selectDuration", label: "Dates" },
-  { key: "people", label: "People" },
-  { key: "budget", label: "Budget" },
-  { key: "preferences", label: "Preferences" },
+  { key: "", label: "Destination", subtitle: "Where should your next adventure begin?" },
+  { key: "selectDuration", label: "Dates", subtitle: "When are you planning to travel?" },
+  { key: "people", label: "Travelers", subtitle: "Who will be joining you on this journey?" },
+  { key: "budget", label: "Budget", subtitle: "What is your target total budget?" },
+  { key: "preferences", label: "Preferences", subtitle: "What experiences & accommodation do you prefer?" },
 ] as const;
 
 function StepIndicator({ current }: { current: string }) {
@@ -35,36 +44,34 @@ function StepIndicator({ current }: { current: string }) {
 
   return (
     <div className="w-full flex items-center justify-center">
-      <nav aria-label="Trip creation progress" className="px-4">
-        <ol className="mx-auto flex w-full max-w-full items-center">
+      <nav aria-label="Trip creation progress" className="px-4 w-full max-w-xl">
+        <ol className="flex w-full items-center justify-between">
           {STEPS.map((step, idx) => {
             const isComplete = idx < activeIdx;
             const isCurrent = idx === activeIdx;
 
             return (
-              <li key={step.key} className="flex items-center">
+              <li key={step.key || "location"} className="flex items-center flex-1 last:flex-initial">
                 <div className="flex flex-col items-center gap-1.5">
                   <span
                     className={cn(
-                      "flex size-7 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                      "flex size-8 items-center justify-center rounded-full text-xs font-semibold transition-all shadow-2xs",
                       isComplete && "bg-primary text-primary-foreground",
-                      isCurrent && "bg-primary text-primary-foreground",
-                      !isComplete &&
-                        !isCurrent &&
-                        "bg-muted text-muted-foreground"
+                      isCurrent && "bg-primary text-primary-foreground ring-4 ring-primary/20",
+                      !isComplete && !isCurrent && "bg-muted text-muted-foreground border border-border"
                     )}
                     aria-current={isCurrent ? "step" : undefined}
                   >
                     {isComplete ? (
-                      <CheckIcon className="size-3.5" />
+                      <CheckIcon className="size-4" />
                     ) : (
                       <span>{idx + 1}</span>
                     )}
                   </span>
                   <span
                     className={cn(
-                      "hidden text-[10px] font-medium leading-none sm:block",
-                      isCurrent ? "text-foreground" : "text-muted-foreground"
+                      "hidden text-[11px] font-medium leading-none sm:block",
+                      isCurrent ? "text-foreground font-semibold" : "text-muted-foreground"
                     )}
                   >
                     {step.label}
@@ -73,7 +80,7 @@ function StepIndicator({ current }: { current: string }) {
                 {idx < STEPS.length - 1 && (
                   <div
                     className={cn(
-                      "mx-1 h-px min-w-3 flex-1 sm:mx-2",
+                      "mx-2 h-0.5 min-w-4 flex-1 transition-colors rounded-full",
                       idx < activeIdx ? "bg-primary" : "bg-border"
                     )}
                   />
@@ -101,8 +108,8 @@ function DateCalendar({
   startMonth?: Date;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3">
-      <p className="text-sm font-medium text-foreground">{label}</p>
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
       <Calendar
         mode="single"
         selected={date}
@@ -111,7 +118,7 @@ function DateCalendar({
         }}
         disabled={disabled}
         startMonth={startMonth}
-        className="w-full"
+        className="w-full border border-border/80 rounded-xl p-3 bg-background"
       />
     </div>
   );
@@ -134,29 +141,35 @@ function SelectLocation() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      <div className="text-center">
-        <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
+    <div className="flex flex-col items-center gap-6 text-center">
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
           Where do you want to go?
         </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 max-w-md">
+          Search any city or region, or select from popular destinations below.
+        </p>
       </div>
+
       <LocationSearch />
+
       {locationError && (
-        <p className="text-sm text-destructive flex items-center gap-1.5">
-          <AlertCircleIcon className="size-4" />
+        <p className="text-xs text-destructive flex items-center gap-1.5 font-medium">
+          <AlertCircleIcon className="size-4 shrink-0" />
           {locationError}
         </p>
       )}
-      <div className="w-full max-w-md">
+
+      <div className="w-full max-w-sm pt-2">
         <Button
-          className="w-full gap-2 cursor-pointer"
+          className="w-full h-11 gap-2 cursor-pointer text-sm font-semibold shadow-xs"
           disabled={!location}
           variant="default"
           type="button"
           onClick={handleNext}
         >
-          Next
-          <ArrowRightIcon className="size-3.5" />
+          Continue to Dates
+          <ArrowRightIcon className="size-4" />
         </Button>
       </div>
     </div>
@@ -227,26 +240,29 @@ function SelectDuration() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      <div className="text-center">
-        <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
+    <div className="flex flex-col items-center gap-6 text-center">
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
           When are you traveling?
         </h1>
         {location && (
-          <p className="mt-1.5 text-sm text-muted-foreground">{location}</p>
+          <Badge variant="outline" className="mt-2 text-xs font-semibold gap-1 bg-primary/10 text-primary border-primary/20">
+            <MapPinIcon className="size-3" />
+            {location}
+          </Badge>
         )}
       </div>
 
-      <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
+      <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-6">
         <DateCalendar
-          label="Check-in"
+          label="Check-in Date"
           date={checkIn}
           onSelect={handleCheckIn}
           disabled={checkInLocked}
           startMonth={new Date()}
         />
         <DateCalendar
-          label="Check-out"
+          label="Check-out Date"
           date={checkOut}
           onSelect={handleCheckOut}
           disabled={!checkIn || checkOutLocked}
@@ -255,52 +271,52 @@ function SelectDuration() {
       </div>
 
       {bothSelected && (
-        <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">{nightCount}</span>{" "}
-            {nightCount === 1 ? "night" : "nights"}
+        <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs">
+          <CalendarIcon className="size-3.5 text-primary" />
+          <p className="text-muted-foreground">
+            Duration: <span className="font-bold text-foreground">{nightCount}</span> {nightCount === 1 ? "night" : "nights"}
           </p>
         </div>
       )}
 
       {dateError && (
-        <p className="text-sm text-destructive flex items-center gap-1.5">
-          <AlertCircleIcon className="size-4" />
+        <p className="text-xs text-destructive flex items-center gap-1.5 font-medium">
+          <AlertCircleIcon className="size-4 shrink-0" />
           {dateError}
         </p>
       )}
 
-      <div className="flex w-full max-w-sm gap-3">
+      <div className="flex w-full max-w-sm gap-3 pt-2">
         {bothSelected ? (
           <>
             <Button
-              className="flex-1 gap-2 cursor-pointer"
+              className="flex-1 gap-1.5 h-11 text-xs cursor-pointer"
               variant="outline"
               type="button"
               onClick={handleReset}
             >
               <RotateCcwIcon className="size-3.5" />
-              Reset dates
+              Reset Dates
             </Button>
             <Button
-              className="flex-1 gap-2 cursor-pointer"
+              className="flex-1 gap-1.5 h-11 text-xs font-semibold cursor-pointer shadow-xs"
               variant="default"
               type="button"
               onClick={handleNext}
             >
-              Next
+              Next: Travelers
               <ArrowRightIcon className="size-3.5" />
             </Button>
           </>
         ) : (
           <>
             <Link href="/create-trip" className="flex-1">
-              <Button className="w-full" variant="outline" type="button">
+              <Button className="w-full h-11 text-xs" variant="outline" type="button">
                 Back
               </Button>
             </Link>
-            <Button className="flex-1" variant="default" type="button" disabled>
-              Next
+            <Button className="flex-1 h-11 text-xs" variant="default" type="button" disabled>
+              Next Step
             </Button>
           </>
         )}
@@ -326,13 +342,16 @@ function SelectPeople() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      <div className="text-center">
-        <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
+    <div className="flex flex-col items-center gap-6 text-center">
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
           Who&apos;s coming on this trip?
         </h1>
         {location && (
-          <p className="mt-1.5 text-sm text-muted-foreground">{location}</p>
+          <Badge variant="outline" className="mt-2 text-xs font-semibold gap-1 bg-primary/10 text-primary border-primary/20">
+            <MapPinIcon className="size-3" />
+            {location}
+          </Badge>
         )}
       </div>
 
@@ -341,25 +360,25 @@ function SelectPeople() {
       </div>
 
       {peopleError && (
-        <p className="text-sm text-destructive flex items-center gap-1.5">
-          <AlertCircleIcon className="size-4" />
+        <p className="text-xs text-destructive flex items-center gap-1.5 font-medium">
+          <AlertCircleIcon className="size-4 shrink-0" />
           {peopleError}
         </p>
       )}
 
-      <div className="flex w-full max-w-sm gap-3">
+      <div className="flex w-full max-w-sm gap-3 pt-2">
         <Link href="/create-trip?step=selectDuration" className="flex-1">
-          <Button className="w-full" variant="outline" type="button">
+          <Button className="w-full h-11 text-xs" variant="outline" type="button">
             Back
           </Button>
         </Link>
         <Button
-          className="flex-1 gap-2 cursor-pointer"
+          className="flex-1 gap-1.5 h-11 text-xs font-semibold cursor-pointer shadow-xs"
           variant="default"
           type="button"
           onClick={handleNext}
         >
-          Next
+          Next: Budget
           <ArrowRightIcon className="size-3.5" />
         </Button>
       </div>
@@ -384,13 +403,16 @@ function SelectBudget() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      <div className="text-center">
-        <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
-          What is your trip budget?
+    <div className="flex flex-col items-center gap-6 text-center">
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
+          What is your total budget?
         </h1>
         {location && (
-          <p className="mt-1.5 text-sm text-muted-foreground">{location}</p>
+          <Badge variant="outline" className="mt-2 text-xs font-semibold gap-1 bg-primary/10 text-primary border-primary/20">
+            <MapPinIcon className="size-3" />
+            {location}
+          </Badge>
         )}
       </div>
 
@@ -399,25 +421,25 @@ function SelectBudget() {
       </div>
 
       {budgetError && (
-        <p className="text-sm text-destructive flex items-center gap-1.5">
-          <AlertCircleIcon className="size-4" />
+        <p className="text-xs text-destructive flex items-center gap-1.5 font-medium">
+          <AlertCircleIcon className="size-4 shrink-0" />
           {budgetError}
         </p>
       )}
 
-      <div className="flex w-full max-w-sm gap-3">
+      <div className="flex w-full max-w-sm gap-3 pt-2">
         <Link href="/create-trip?step=people" className="flex-1">
-          <Button className="w-full" variant="outline" type="button">
+          <Button className="w-full h-11 text-xs" variant="outline" type="button">
             Back
           </Button>
         </Link>
         <Button
-          className="flex-1 gap-2 cursor-pointer"
+          className="flex-1 gap-1.5 h-11 text-xs font-semibold cursor-pointer shadow-xs"
           variant="default"
           type="button"
           onClick={handleNext}
         >
-          Next
+          Next: Preferences
           <ArrowRightIcon className="size-3.5" />
         </Button>
       </div>
@@ -428,59 +450,85 @@ function SelectBudget() {
 function SelectPreferences() {
   const router = useRouter();
   const { location, form, tripData } = useContext(TripContext);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const prefError =
     form?.formState.errors.tripPreferences?.message ||
     form?.formState.errors.foodPreferences?.message ||
     form?.formState.errors.preferStayingIn?.message;
 
   const handleGenerate = async () => {
-    if (!form) {
-      router.push("/chat");
-      return;
-    }
+    if (!form) return;
     const isValid = await form.trigger();
-    if (isValid) {
-      console.log("Submitted full trip data altogether:", tripData);
-      router.push("/chat");
+    if (!isValid) return;
+
+    try {
+      setIsGenerating(true);
+      setApiError(null);
+      const res = await generateTrip(tripData);
+      if (res?.id) {
+        router.push(`/trips/${res.id}`);
+      } else {
+        setApiError("Failed to retrieve generated trip ID.");
+      }
+    } catch (err: any) {
+      console.error("Trip generation error:", err);
+      setApiError(err?.message || "An unexpected error occurred while generating your trip.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      <div className="text-center">
-        <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">
-          What are your trip preferences?
+    <div className="flex flex-col items-center gap-6 text-center">
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
+          Trip & Accommodation Style
         </h1>
         {location && (
-          <p className="mt-1.5 text-sm text-muted-foreground">{location}</p>
+          <Badge variant="outline" className="mt-2 text-xs font-semibold gap-1 bg-primary/10 text-primary border-primary/20">
+            <MapPinIcon className="size-3" />
+            {location}
+          </Badge>
         )}
       </div>
 
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-lg text-left">
         <PreferencesInput />
       </div>
 
-      {prefError && (
-        <p className="text-sm text-destructive flex items-center gap-1.5">
-          <AlertCircleIcon className="size-4" />
-          {prefError}
+      {(prefError || apiError) && (
+        <p className="text-xs text-destructive flex items-center gap-1.5 font-medium">
+          <AlertCircleIcon className="size-4 shrink-0" />
+          {prefError || apiError}
         </p>
       )}
 
-      <div className="flex w-full max-w-sm gap-3">
+      <div className="flex w-full max-w-sm gap-3 pt-2">
         <Link href="/create-trip?step=budget" className="flex-1">
-          <Button className="w-full" variant="outline" type="button">
+          <Button className="w-full h-11 text-xs" variant="outline" type="button" disabled={isGenerating}>
             Back
           </Button>
         </Link>
         <Button
-          className="flex-1 gap-2 cursor-pointer"
+          className="flex-1 gap-2 h-11 text-xs font-semibold cursor-pointer shadow-xs"
           variant="default"
           type="button"
+          disabled={isGenerating}
           onClick={handleGenerate}
         >
-          Generate Trip
-          <SparklesIcon className="size-3.5" />
+          {isGenerating ? (
+            <>
+              <Loader2Icon className="size-4 animate-spin" />
+              Generating Itinerary...
+            </>
+          ) : (
+            <>
+              Generate Trip
+              <CompassIcon className="size-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -495,29 +543,30 @@ export default function CreateTripPage({
   const { step } = use(searchParams);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col bg-background selection:bg-primary/20">
       <Header />
 
-      <div className="pt-6 sm:pt-8">
+      <div className="pt-6 sm:pt-8 pb-4">
         <StepIndicator current={step ?? ""} />
       </div>
 
-      <main className="flex flex-1 items-start justify-center px-4 py-10 sm:py-14">
-        <div className="w-full max-w-2xl">
-          {step === "selectDuration" ? (
-            <SelectDuration />
-          ) : step === "people" ? (
-            <SelectPeople />
-          ) : step === "budget" ? (
-            <SelectBudget />
-          ) : step === "preferences" ? (
-            <SelectPreferences />
-          ) : (
-            <SelectLocation />
-          )}
-        </div>
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-10 flex flex-col items-center justify-start">
+        <Card className="w-full max-w-2xl border-border/80 shadow-xs rounded-2xl p-6 sm:p-8 bg-card">
+          <CardContent className="p-0">
+            {step === "selectDuration" ? (
+              <SelectDuration />
+            ) : step === "people" ? (
+              <SelectPeople />
+            ) : step === "budget" ? (
+              <SelectBudget />
+            ) : step === "preferences" ? (
+              <SelectPreferences />
+            ) : (
+              <SelectLocation />
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
 }
-

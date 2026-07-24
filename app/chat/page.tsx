@@ -20,7 +20,7 @@ import {
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
-} from "@/components/ai-elements/conversation";
+} from "@/components/ai-elements/conversation"; 
 import {
   Message,
   MessageContent,

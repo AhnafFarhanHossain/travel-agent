@@ -32,7 +32,7 @@ export default function PeopleInput({
   className,
   id = "people-input",
 }: PeopleInputProps) {
-  const tripContext = useContext(TripContext);
+  const tripContext = useContext(TripContext); 
 
   const contextCount = tripContext?.noOfPeople ?? 0;
   const rawCount = value !== undefined ? value : contextCount;

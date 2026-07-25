@@ -14,6 +14,8 @@ export const itinerarySchema = z.object({
           title: z.string().describe('Name of the spot or activity'),
           description: z.string().describe('Why this spot was chosen based on user preferences'),
           locationName: z.string(),
+          locationLatitude: z.number().describe('Latitude of the location'),
+          locationLongitude: z.number().describe('Longitude of the location'),
           category: z.enum(['food', 'sightseeing', 'accommodation', 'activity']),
           estimatedCost: z.number(),
           bookingRequired: z.boolean(),

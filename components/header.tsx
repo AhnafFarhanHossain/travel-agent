@@ -1,17 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import {
-  CompassIcon,
-  UserIcon,
-  PlusIcon,
-  LayoutDashboardIcon,
-  MessageSquareIcon,
-  LogOutIcon,
-  LogInIcon,
-} from "lucide-react";
+import { UserIcon, PlusIcon, LayoutDashboardIcon, MessageSquareIcon, LogOutIcon, LogInIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -32,24 +25,23 @@ export function Header() {
   const userInitial = session?.user?.name
     ? session.user.name.charAt(0).toUpperCase()
     : session?.user?.email
-    ? session.user.email.charAt(0).toUpperCase()
-    : null;
+      ? session.user.email.charAt(0).toUpperCase()
+      : null;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4 sm:px-6">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-foreground transition-colors hover:text-primary"
-          >
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <CompassIcon className="size-4 shrink-0" />
-            </div>
-            <span className="font-heading text-lg font-bold tracking-tight">
-              Kova
-            </span>
+          <Link href="/dashboard" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+            <Image
+              src="/kova-logo-black.png"
+              alt="Kova"
+              width={80}
+              height={24}
+              className="h-5 w-auto object-contain dark:hidden"
+              priority
+            />
           </Link>
 
           {/* Navigation Links */}
@@ -60,7 +52,7 @@ export function Header() {
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                 pathname === "/dashboard"
                   ? "bg-muted text-foreground font-semibold"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
             >
               <LayoutDashboardIcon className="size-3.5" />
@@ -72,7 +64,7 @@ export function Header() {
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                 pathname === "/chat"
                   ? "bg-muted text-foreground font-semibold"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
             >
               <MessageSquareIcon className="size-3.5" />
@@ -110,9 +102,7 @@ export function Header() {
                     <p className="text-sm font-semibold truncate text-foreground">
                       {session.user.name || "Logged In User"}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {session.user.email}
-                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{session.user.email}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <form action={logOut} className="w-full">

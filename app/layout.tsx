@@ -10,9 +10,14 @@ import { SessionProvider } from "next-auth/react";
 const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Travel Agent",
+  title: "Kova — AI Personal Travel Agent",
   description:
-    "AI Travel Agent is a travel planning application that uses AI to help you plan your trips with the power of Agentic AI to help you find the perfect trip spots",
+    "Kova is an intelligent travel planning assistant that creates personalized, day-by-day itineraries tailored to your dates, party, and preferences.",
+  icons: {
+    icon: "/kova-icon.png",
+    shortcut: "/kova-icon.png",
+    apple: "/kova-icon.png",
+  },
 };
 
 export default function RootLayout({

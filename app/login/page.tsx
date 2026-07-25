@@ -7,11 +7,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Loader2Icon, CompassIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { Loader2Icon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { login } from "./actions/login";
 import { toast } from "sonner";
 
@@ -59,9 +60,31 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 px-4">
-      <Link href="/" className="flex items-center gap-2 text-foreground transition-colors hover:text-primary">
-        <CompassIcon className="size-6" />
-        <span className="font-heading text-lg font-semibold tracking-tight">Kova - Your Personal Travel Agent</span>
+      <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-90">
+        <Image
+          src="/kova-icon.png"
+          alt="Kova Icon"
+          width={36}
+          height={36}
+          className="size-9 rounded-xl object-contain shadow-2xs"
+          priority
+        />
+        <Image
+          src="/kova-logo-black.png"
+          alt="Kova - Your Personal Travel Agent"
+          width={120}
+          height={32}
+          className="h-7 w-auto object-contain dark:hidden"
+          priority
+        />
+        <Image
+          src="/kova-logo.png"
+          alt="Kova - Your Personal Travel Agent"
+          width={120}
+          height={32}
+          className="hidden h-7 w-auto object-contain dark:block"
+          priority
+        />
       </Link>
 
       <Card className="w-full max-w-sm" size="sm">

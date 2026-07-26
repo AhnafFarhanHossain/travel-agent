@@ -12,10 +12,7 @@ export async function POST(req: Request) {
 
     const tripDetails = await req.json();
     if (!tripDetails || !tripDetails.location) {
-      return Response.json(
-        { message: "Bad Request: Location and trip details are required." },
-        { status: 400 }
-      );
+      return Response.json({ message: "Bad Request: Location and trip details are required." }, { status: 400 });
     }
 
     const foodPref = Array.isArray(tripDetails.foodPreferences)
@@ -41,7 +38,7 @@ export async function POST(req: Request) {
     const { object: itinerary } = await generateObject({
       model: google(process.env.LANGUAGE_MODEL as string),
       schema: itinerarySchema,
-      system: `You are an expert travel planner. Create a detailed daily trip plan structured strictly according to the provided JSON schema. NEVER deviate from the schema. Ensure that the trip plan is realistic, feasible, exciting, and tailored to the user's preferences. Make sensible assumptions for activity costs and timing. Provide realistic location names and helpful booking query hints.`,
+      system: `You are an expert travel planner. Create a detailed daily trip plan structured strictly according to the provided JSON schema. NEVER deviate from the schema. Ensure that the trip plan is realistic, feasible, exciting, and tailored to the user's preferences. Make sensible assumptions for activity costs and timing. Provide realistic location names and helpful booking query hints. Daily budget should not exceed the total budget divided by the number of days. If the budget is too low for the trip, indicate this in the exceptionCases section. Ensure that all activities are suitable for the number of travelers and their preferences. Avoid suggesting activities that are closed on the specified dates. Make sure to check the URL's of the booking links and provide accurate information. If any preferences contradict each other, highlight this in the exceptionCases section.`,
       prompt: `
         Generate a trip plan based on these user constraints:
         - Location: ${tripDetails.location}
@@ -52,7 +49,7 @@ export async function POST(req: Request) {
         - Dietary Preferences: ${foodPref}
         - Activity/Spot Preferences: ${tripPref}
         - Accommodation Preferences: ${stayPref}
-      `
+      `,
     });
 
     const newTrip = await Trip.create({
@@ -76,9 +73,6 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error("Error generating trip:", error);
-    return Response.json(
-      { message: error?.message || "Error generating trip." },
-      { status: 500 }
-    );
+    return Response.json({ message: error?.message || "Error generating trip." }, { status: 500 });
   }
 }

@@ -104,7 +104,7 @@ export default function PreferencesInput({
       {/* 1. Trip Style & Vibe */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <CompassIcon className="size-4 text-primary" />
+          <CompassIcon className="size-4 text-muted-foreground" />
           <Label className="text-sm font-semibold text-foreground">
             Trip Style & Vibe
           </Label>
@@ -155,7 +155,7 @@ export default function PreferencesInput({
       {/* 2. Accommodation Preference */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <Building2Icon className="size-4 text-primary" />
+          <Building2Icon className="size-4 text-muted-foreground" />
           <Label className="text-sm font-semibold text-foreground">
             Accommodation Preference
           </Label>
@@ -173,7 +173,7 @@ export default function PreferencesInput({
                 className={cn(
                   "flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all cursor-pointer text-center",
                   isActive
-                    ? "border-primary bg-primary/5 text-primary shadow-xs font-semibold"
+                    ? "border-foreground bg-foreground text-background shadow-xs font-semibold"
                     : "border-border bg-background text-muted-foreground hover:border-foreground/20 hover:text-foreground"
                 )}
               >
@@ -188,7 +188,7 @@ export default function PreferencesInput({
       {/* 3. Dietary & Food Preferences */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <UtensilsIcon className="size-4 text-primary" />
+          <UtensilsIcon className="size-4 text-muted-foreground" />
           <Label className="text-sm font-semibold text-foreground">
             Dietary & Food Preference
           </Label>

@@ -82,7 +82,7 @@ export default function LocationSearch() {
       <div className="relative">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <MapPinIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-primary shrink-0" />
+            <MapPinIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground shrink-0" />
             <Input
               id="location-search"
               type="text"
@@ -91,7 +91,7 @@ export default function LocationSearch() {
               onChange={handleInputChange}
               readOnly={Boolean(selectedLocation)}
               className={cn(
-                "h-12 pl-10 pr-4 text-sm rounded-xl border-border bg-background shadow-2xs focus-visible:ring-primary",
+                "h-12 pl-10 pr-4 text-sm rounded-xl border-border bg-background shadow-2xs focus-visible:ring-ring/30",
                 selectedLocation && "bg-muted font-medium"
               )}
             />
@@ -115,7 +115,7 @@ export default function LocationSearch() {
           <ul className="absolute z-50 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-lg scrollbar-none">
             {isPending ? (
               <li className="flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground">
-                <Loader2Icon className="size-4 animate-spin text-primary" />
+                <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
                 Searching destinations...
               </li>
             ) : results.length > 0 ? (
@@ -134,7 +134,7 @@ export default function LocationSearch() {
                       className="w-4 h-2.5 rounded-2xs object-cover shrink-0"
                     />
                   ) : (
-                    <MapPinIcon className="size-3.5 text-primary shrink-0" />
+                    <MapPinIcon className="size-3.5 text-muted-foreground shrink-0" />
                   )}
                   <span className="flex-1 truncate">
                     <span className="font-semibold text-foreground">{item.city}</span>
@@ -154,7 +154,7 @@ export default function LocationSearch() {
       {/* Popular Destination Quick Cards */}
       <div className="space-y-2.5 pt-2">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-          <CompassIcon className="size-3.5 text-primary" />
+          <CompassIcon className="size-3.5 text-muted-foreground" />
           <span>Popular Destinations</span>
         </div>
 
@@ -169,8 +169,8 @@ export default function LocationSearch() {
                 className={cn(
                   "flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer",
                   isSelected
-                    ? "border-primary bg-primary/10 text-primary font-semibold"
-                    : "border-border/80 bg-card hover:border-primary/40 hover:bg-accent/40 text-foreground"
+                    ? "border-foreground bg-foreground text-background font-semibold shadow-2xs"
+                    : "border-border/80 bg-card hover:border-foreground/20 hover:bg-muted/40 text-foreground"
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}

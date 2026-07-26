@@ -72,50 +72,50 @@ const ChatPage = () => {
             <ArrowLeftIcon className="size-3.5" />
             Edit Trip Details
           </Link>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-            <SparklesIcon className="size-3.5" />
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <SparklesIcon className="size-3.5 text-muted-foreground" />
             <span>Trip Data Loaded</span>
           </div>
         </div>
 
         {hasTripData ? (
-          <div className="mx-auto mt-3 w-full max-w-3xl rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4 text-xs">
-            <div className="flex items-center justify-between border-b border-primary/10 pb-2 mb-2.5">
+          <div className="mx-auto mt-3 w-full max-w-3xl rounded-xl border border-border/80 bg-card p-3 sm:p-4 text-xs shadow-2xs">
+            <div className="flex items-center justify-between border-b border-border/60 pb-2 mb-2.5">
               <span className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                <MapPinIcon className="size-4 text-primary" />
+                <MapPinIcon className="size-4 text-muted-foreground" />
                 {tripData.location}
               </span>
-              <span className="text-[11px] font-mono text-muted-foreground bg-background/80 px-2 py-0.5 rounded-full border border-border">
+              <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full border border-border/40">
                 {formatDate(tripData.startDate)} – {formatDate(tripData.endDate)}
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 text-muted-foreground">
               <div className="flex items-center gap-1.5">
-                <UsersIcon className="size-3.5 text-primary shrink-0" />
+                <UsersIcon className="size-3.5 text-muted-foreground shrink-0" />
                 <span className="truncate">{tripData.noOfPeople} {tripData.noOfPeople === 1 ? "person" : "people"}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <WalletIcon className="size-3.5 text-primary shrink-0" />
+                <WalletIcon className="size-3.5 text-muted-foreground shrink-0" />
                 <span className="truncate">${tripData.budget.toLocaleString()} USD</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <CompassIcon className="size-3.5 text-primary shrink-0" />
+                <CompassIcon className="size-3.5 text-muted-foreground shrink-0" />
                 <span className="truncate">{tripData.tripPreferences}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Building2Icon className="size-3.5 text-primary shrink-0" />
+                <Building2Icon className="size-3.5 text-muted-foreground shrink-0" />
                 <span className="truncate">{tripData.preferStayingIn}</span>
               </div>
               <div className="flex items-center gap-1.5 col-span-2 sm:col-span-1">
-                <UtensilsIcon className="size-3.5 text-primary shrink-0" />
+                <UtensilsIcon className="size-3.5 text-muted-foreground shrink-0" />
                 <span className="truncate">{tripData.foodPreferences}</span>
               </div>
             </div>
           </div>
         ) : (
           <div className="mx-auto mt-2 w-full max-w-3xl text-center text-xs text-muted-foreground">
-            No active trip created. <Link href="/create-trip" className="text-primary underline">Create a trip</Link> first to generate custom itineraries.
+            No active trip created. <Link href="/create-trip" className="text-foreground font-semibold hover:underline">Create a trip</Link> first to generate custom itineraries.
           </div>
         )}
       </header>

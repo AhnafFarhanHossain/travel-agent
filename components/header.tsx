@@ -35,7 +35,7 @@ export function Header() {
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
             <Image
-              src="/kova-logo-black.png"
+              src="/kova-icon.png"
               alt="Kova"
               width={80}
               height={24}
@@ -89,8 +89,8 @@ export function Header() {
 
           <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none">
-              <Avatar size="sm" className="cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all">
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+              <Avatar size="sm" className="cursor-pointer hover:ring-2 hover:ring-border transition-all">
+                <AvatarFallback className="bg-muted text-foreground font-semibold text-xs border border-border/60">
                   {userInitial ? userInitial : <UserIcon className="size-3.5" />}
                 </AvatarFallback>
               </Avatar>

@@ -59,6 +59,8 @@ interface TripData {
   preferStayingIn?: string | string[];
   itinerary: Itinerary;
   createdAt?: string;
+  groundingMetadata?: string;
+  safetyRating?: string;
 }
 
 interface FlatActivity {
@@ -180,6 +182,8 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
       fetchTrip();
     }
   }, [id]);
+
+  const { groundingMetadata, safetyRating } = trip || {};
 
   const flatActivities = useMemo<FlatActivity[]>(() => {
     if (!trip?.itinerary?.days) return [];
@@ -371,6 +375,12 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
           )}
+
+          <div>
+            {
+              groundingMetadata && <p>{groundingMetadata}</p>
+            }
+          </div>
 
           {/* Stat Cards Grid — High visual prominence */}
           <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">

@@ -10,7 +10,7 @@ import { SessionProvider } from "next-auth/react";
 const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Kova — AI Personal Travel Agent",
+  title: "Kova - Personal AI Travel Agent",
   description:
     "Kova is an intelligent travel planning assistant that creates personalized, day-by-day itineraries tailored to your dates, party, and preferences.",
   icons: {

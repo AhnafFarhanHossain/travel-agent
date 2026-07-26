@@ -1,9 +1,39 @@
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { getHotelData } from "@/lib/google-hotels-api";
 import { Trip } from "@/lib/models/Trip";
 import { itinerarySchema } from "@/lib/schemas/itenerary";
 import { google, GoogleProviderMetadata } from "@ai-sdk/google";
-import { generateText, Output } from "ai";
+import { generateText, Output, tool } from "ai";
+import z from "zod";
+
+// search hotel tool
+const hotelAvailabilityTool = tool({
+  description:
+    "Searches Google via Serper.dev for real-time room availability, rates, and booking links for a specified resort or hotel. Use this tool every time before creating a trip plan to ensure the information is accurate and up-to-date.",
+  inputSchema: z.object({
+    hotelName: z
+      .string()
+      .describe('Name of the hotel or resort (e.g. "Grand Hyatt Bali")'),
+    checkInDate: z.string().describe("Arrival date in YYYY-MM-DD format"),
+    checkOutDate: z.string().describe("Departure date in YYYY-MM-DD format"),
+    guests: z.number().optional().default(2).describe("Number of adult guests"),
+    budget: z
+      .number()
+      .optional()
+      .default(0)
+      .describe("Total budget for the trip"),
+  }),
+  execute: async (params) => {
+    return await getHotelData({
+      hotelName: params.hotelName,
+      checkInDate: params.checkInDate,
+      checkOutDate: params.checkOutDate,
+      budget: params.budget || 0,
+      guests: params.guests || 2,
+    });
+  },
+});
 
 export async function POST(req: Request) {
   try {
@@ -12,7 +42,10 @@ export async function POST(req: Request) {
 
     const tripDetails = await req.json();
     if (!tripDetails || !tripDetails.location) {
-      return Response.json({ message: "Bad Request: Location and trip details are required." }, { status: 400 });
+      return Response.json(
+        { message: "Bad Request: Location and trip details are required." },
+        { status: 400 },
+      );
     }
 
     const foodPref = Array.isArray(tripDetails.foodPreferences)
@@ -31,7 +64,10 @@ export async function POST(req: Request) {
     if (!durationText && tripDetails.startDate && tripDetails.endDate) {
       const start = new Date(tripDetails.startDate);
       const end = new Date(tripDetails.endDate);
-      const diffDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      const diffDays = Math.max(
+        1,
+        Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
+      );
       durationText = `${diffDays} day${diffDays > 1 ? "s" : ""}`;
     }
 
@@ -52,12 +88,18 @@ export async function POST(req: Request) {
         - Activity/Spot Preferences: ${tripPref}
         - Accommodation Preferences: ${stayPref}
       `,
+      tools: {
+        searchHotelData: hotelAvailabilityTool,
+      },
+      stopWhen: ({ steps }) => steps.length >= 3,
     });
 
     const newTrip = await Trip.create({
       userId: session?.user?.id || null,
       tripLocation: tripDetails.location,
-      startDate: tripDetails.startDate ? new Date(tripDetails.startDate) : new Date(),
+      startDate: tripDetails.startDate
+        ? new Date(tripDetails.startDate)
+        : new Date(),
       endDate: tripDetails.endDate ? new Date(tripDetails.endDate) : new Date(),
       noOfPeople: tripDetails.noOfPeople || 1,
       budget: tripDetails.budget || 1000,
@@ -75,6 +117,9 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error("Error generating trip:", error);
-    return Response.json({ message: error?.message || "Error generating trip." }, { status: 500 });
+    return Response.json(
+      { message: error?.message || "Error generating trip." },
+      { status: 500 },
+    );
   }
 }

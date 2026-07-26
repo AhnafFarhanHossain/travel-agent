@@ -52,14 +52,7 @@ export async function POST(req: Request) {
         - Activity/Spot Preferences: ${tripPref}
         - Accommodation Preferences: ${stayPref}
       `,
-      tools: {
-        google_search: google.tools.googleSearch({})
-      }
     });
-
-    const metadata = providerMetadata?.google as GoogleProviderMetadata | undefined;
-    const groundingMetadata = metadata?.groundingMetadata;
-    const safetyRatings = metadata?.safetyRatings;
 
     const newTrip = await Trip.create({
       userId: session?.user?.id || null,
@@ -78,8 +71,6 @@ export async function POST(req: Request) {
       success: true,
       id: newTrip._id.toString(),
       itinerary,
-      groundingMetadata,
-      safetyRatings,
       trip: newTrip,
     });
   } catch (error: any) {

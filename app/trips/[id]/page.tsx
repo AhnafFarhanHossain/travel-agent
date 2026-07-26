@@ -256,34 +256,34 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
 
   const { itinerary } = trip;
   const daysList = itinerary.days || [];
-  const exceptions = itinerary.exceptionCases || {};
+  const exceptions = itinerary.exceptionCases || null;
 
   const activeExceptionsList = [
-    exceptions.ranOutOfBudget && {
+    exceptions?.ranOutOfBudget && {
       key: "ranOutOfBudget",
       title: "Budget Exceeded",
       description: `The calculated itinerary total ($${itinerary.estimatedTotalCost?.toLocaleString()} USD) exceeds your target budget ($${trip.budget.toLocaleString()} USD).`,
       icon: WalletIcon,
     },
-    exceptions.unrealisticBudget && {
+    exceptions?.unrealisticBudget && {
       key: "unrealisticBudget",
       title: "Unrealistic Budget",
       description: `The allocated budget ($${trip.budget.toLocaleString()} USD) is tight for ${trip.tripLocation} and ${trip.noOfPeople} traveler(s).`,
       icon: AlertCircleIcon,
     },
-    exceptions.activitySiteClosedOnTripDay && {
+    exceptions?.activitySiteClosedOnTripDay && {
       key: "activitySiteClosedOnTripDay",
       title: "Venue Closure Advisory",
       description: "One or more planned activity sites may be closed on your scheduled trip dates.",
       icon: ClockIcon,
     },
-    exceptions.partySizeMismatches && {
+    exceptions?.partySizeMismatches && {
       key: "partySizeMismatches",
       title: "Party Size Advisory",
       description: `Certain venues or activities in this plan may have capacity constraints for your party of ${trip.noOfPeople}.`,
       icon: UsersIcon,
     },
-    exceptions.contradictoryPreferences && {
+    exceptions?.contradictoryPreferences && {
       key: "contradictoryPreferences",
       title: "Conflicting Preferences",
       description: "Some selected travel preferences conflict. The AI created a balanced compromise plan.",
@@ -375,12 +375,6 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
           )}
-
-          <div>
-            {
-              groundingMetadata && <p>{groundingMetadata}</p>
-            }
-          </div>
 
           {/* Stat Cards Grid — High visual prominence */}
           <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">

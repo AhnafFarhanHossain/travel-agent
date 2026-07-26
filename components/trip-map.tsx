@@ -198,7 +198,7 @@ export function TripMap({ activities, activeKey, onSelectActivity }: TripMapProp
       {/* Top Left: Active location badge */}
       {activeKey && activeActivity && (
         <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 rounded-lg bg-background/95 backdrop-blur px-3 py-1.5 text-xs font-medium border border-border shadow-md pointer-events-auto">
-          <span className="size-2 rounded-full bg-primary animate-pulse" />
+          <span className="size-2 rounded-full bg-foreground animate-pulse" />
           <span className="truncate max-w-[200px] sm:max-w-[280px]">
             {activeActivity.title}
           </span>

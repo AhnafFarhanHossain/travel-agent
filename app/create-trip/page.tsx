@@ -56,8 +56,8 @@ function StepIndicator({ current }: { current: string }) {
                   <span
                     className={cn(
                       "flex size-8 items-center justify-center rounded-full text-xs font-semibold transition-all shadow-2xs",
-                      isComplete && "bg-primary text-primary-foreground",
-                      isCurrent && "bg-primary text-primary-foreground ring-4 ring-primary/20",
+                      isComplete && "bg-foreground text-background",
+                      isCurrent && "bg-foreground text-background ring-4 ring-ring/20",
                       !isComplete && !isCurrent && "bg-muted text-muted-foreground border border-border"
                     )}
                     aria-current={isCurrent ? "step" : undefined}
@@ -81,7 +81,7 @@ function StepIndicator({ current }: { current: string }) {
                   <div
                     className={cn(
                       "mx-2 h-0.5 min-w-4 flex-1 transition-colors rounded-full",
-                      idx < activeIdx ? "bg-primary" : "bg-border"
+                      idx < activeIdx ? "bg-foreground" : "bg-border"
                     )}
                   />
                 )}
@@ -99,12 +99,14 @@ function DateCalendar({
   date,
   onSelect,
   disabled,
+  matcher,
   startMonth,
 }: {
   label: string;
   date: Date | undefined;
   onSelect: (d: Date) => void;
   disabled: boolean;
+  matcher?: any;
   startMonth?: Date;
 }) {
   return (
@@ -116,7 +118,7 @@ function DateCalendar({
         onSelect={(d) => {
           if (d) onSelect(d);
         }}
-        disabled={disabled}
+        disabled={disabled ? true : matcher}
         startMonth={startMonth}
         className="w-full border border-border/80 rounded-xl p-3 bg-background"
       />
@@ -181,6 +183,12 @@ function SelectDuration() {
   const { location, startDate, endDate, setStartDate, setEndDate, form } =
     useContext(TripContext);
 
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
   const checkIn = useMemo(
     () => (startDate ? new Date(startDate) : undefined),
     [startDate]
@@ -195,16 +203,30 @@ function SelectDuration() {
 
   const handleCheckIn = useCallback(
     (d: Date) => {
-      setStartDate(d.toISOString());
+      const normalized = new Date(d);
+      normalized.setHours(0, 0, 0, 0);
+
+      setStartDate(normalized.toISOString());
+
+      // If checkOut is already selected and is before new checkIn, reset checkOut
+      if (checkOut && checkOut < normalized) {
+        setEndDate("");
+      }
     },
-    [setStartDate]
+    [setStartDate, setEndDate, checkOut]
   );
 
   const handleCheckOut = useCallback(
     (d: Date) => {
-      setEndDate(d.toISOString());
+      const normalized = new Date(d);
+      normalized.setHours(0, 0, 0, 0);
+
+      if (checkIn && normalized < checkIn) {
+        return;
+      }
+      setEndDate(normalized.toISOString());
     },
-    [setEndDate]
+    [checkIn, setEndDate]
   );
 
   const handleReset = useCallback(() => {
@@ -246,8 +268,8 @@ function SelectDuration() {
           When are you traveling?
         </h1>
         {location && (
-          <Badge variant="outline" className="mt-2 text-xs font-semibold gap-1 bg-primary/10 text-primary border-primary/20">
-            <MapPinIcon className="size-3" />
+          <Badge variant="secondary" className="mt-2 text-xs font-medium gap-1 bg-muted text-foreground border-border/60">
+            <MapPinIcon className="size-3 text-muted-foreground" />
             {location}
           </Badge>
         )}
@@ -259,20 +281,22 @@ function SelectDuration() {
           date={checkIn}
           onSelect={handleCheckIn}
           disabled={checkInLocked}
-          startMonth={new Date()}
+          matcher={{ before: today }}
+          startMonth={today}
         />
         <DateCalendar
           label="Check-out Date"
           date={checkOut}
           onSelect={handleCheckOut}
           disabled={!checkIn || checkOutLocked}
-          startMonth={checkIn ? new Date(checkIn) : new Date()}
+          matcher={checkIn ? { before: checkIn } : { before: today }}
+          startMonth={checkIn || today}
         />
       </div>
 
       {bothSelected && (
-        <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs">
-          <CalendarIcon className="size-3.5 text-primary" />
+        <div className="flex items-center gap-2 rounded-full border border-border/80 bg-muted/40 px-4 py-1.5 text-xs">
+          <CalendarIcon className="size-3.5 text-muted-foreground" />
           <p className="text-muted-foreground">
             Duration: <span className="font-bold text-foreground">{nightCount}</span> {nightCount === 1 ? "night" : "nights"}
           </p>
@@ -348,8 +372,8 @@ function SelectPeople() {
           Who&apos;s coming on this trip?
         </h1>
         {location && (
-          <Badge variant="outline" className="mt-2 text-xs font-semibold gap-1 bg-primary/10 text-primary border-primary/20">
-            <MapPinIcon className="size-3" />
+          <Badge variant="secondary" className="mt-2 text-xs font-medium gap-1 bg-muted text-foreground border-border/60">
+            <MapPinIcon className="size-3 text-muted-foreground" />
             {location}
           </Badge>
         )}
@@ -409,8 +433,8 @@ function SelectBudget() {
           What is your total budget?
         </h1>
         {location && (
-          <Badge variant="outline" className="mt-2 text-xs font-semibold gap-1 bg-primary/10 text-primary border-primary/20">
-            <MapPinIcon className="size-3" />
+          <Badge variant="secondary" className="mt-2 text-xs font-medium gap-1 bg-muted text-foreground border-border/60">
+            <MapPinIcon className="size-3 text-muted-foreground" />
             {location}
           </Badge>
         )}
@@ -487,8 +511,8 @@ function SelectPreferences() {
           Trip & Accommodation Style
         </h1>
         {location && (
-          <Badge variant="outline" className="mt-2 text-xs font-semibold gap-1 bg-primary/10 text-primary border-primary/20">
-            <MapPinIcon className="size-3" />
+          <Badge variant="secondary" className="mt-2 text-xs font-medium gap-1 bg-muted text-foreground border-border/60">
+            <MapPinIcon className="size-3 text-muted-foreground" />
             {location}
           </Badge>
         )}

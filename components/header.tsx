@@ -4,9 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { UserIcon, PlusIcon, LayoutDashboardIcon, MessageSquareIcon, LogOutIcon, LogInIcon } from "lucide-react";
+import { UserIcon, PlusIcon, LayoutDashboardIcon, MessageSquareIcon, LogOutIcon, LogInIcon, UserPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,74 +31,94 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/90 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+          <Link href={session?.user ? "/dashboard" : "/"} className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+            <Image
+              src="/kova-icon.png"
+              alt="Kova Icon"
+              width={28}
+              height={28}
+              className="size-7 rounded-lg object-contain shadow-2xs"
+              priority
+            />
             <Image
               src="/kova-logo-black.png"
-              alt="Kova"
-              width={80}
+              alt="Kova - Personal AI Travel Agent"
+              width={90}
               height={24}
               className="h-5 w-auto object-contain dark:hidden"
               priority
             />
+            <Image
+              src="/kova-logo.png"
+              alt="Kova - Personal AI Travel Agent"
+              width={90}
+              height={24}
+              className="hidden h-5 w-auto object-contain dark:block"
+              priority
+            />
           </Link>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1">
-            <Link
-              href="/dashboard"
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                pathname === "/dashboard"
-                  ? "bg-muted text-foreground font-semibold"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-              )}
-            >
-              <LayoutDashboardIcon className="size-3.5" />
-              Dashboard
-            </Link>
-            <Link
-              href="/chat"
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                pathname === "/chat"
-                  ? "bg-muted text-foreground font-semibold"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-              )}
-            >
-              <MessageSquareIcon className="size-3.5" />
-              AI Assistant
-            </Link>
-          </nav>
+          {/* Navigation Links (Logged In) */}
+          {session?.user && (
+            <nav className="hidden md:flex items-center gap-1">
+              <Link
+                href="/dashboard"
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  pathname === "/dashboard"
+                    ? "bg-muted text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                <LayoutDashboardIcon className="size-3.5" />
+                Dashboard
+              </Link>
+              <Link
+                href="/chat"
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  pathname === "/chat"
+                    ? "bg-muted text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                <MessageSquareIcon className="size-3.5" />
+                AI Assistant
+              </Link>
+            </nav>
+          )}
         </div>
 
         {/* Action Buttons & User Menu */}
-        <div className="flex items-center gap-3">
-          {pathname !== "/create-trip" && (
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
-              nativeButton={false}
-              render={<Link href="/create-trip" />}
-            >
-              <PlusIcon className="size-3.5" />
-              Create Trip
-            </Button>
-          )}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger className="focus:outline-none">
-              <Avatar size="sm" className="cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all">
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                  {userInitial ? userInitial : <UserIcon className="size-3.5" />}
-                </AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 p-2">
-              {session?.user ? (
-                <>
+          {session?.user ? (
+            <>
+              {pathname !== "/create-trip" && (
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
+                  nativeButton={false}
+                  render={<Link href="/create-trip" />}
+                >
+                  <PlusIcon className="size-3.5" />
+                  Create Trip
+                </Button>
+              )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger className="focus:outline-none">
+                  <Avatar size="sm" className="cursor-pointer hover:ring-2 hover:ring-border transition-all">
+                    <AvatarFallback className="bg-muted text-foreground font-semibold text-xs border border-border/60">
+                      {userInitial ? userInitial : <UserIcon className="size-3.5" />}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 p-2">
                   <DropdownMenuLabel className="font-normal p-2">
                     <p className="text-sm font-semibold truncate text-foreground">
                       {session.user.name || "Logged In User"}
@@ -113,21 +134,31 @@ export function Header() {
                       </DropdownMenuItem>
                     </button>
                   </form>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuLabel className="font-normal p-2">
-                    <p className="text-xs font-medium text-muted-foreground">Guest User</p>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem nativeButton={false} render={<Link href="/login" />}>
-                    <LogInIcon className="size-3.5 mr-2 text-muted-foreground" />
-                    Log in
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs font-medium cursor-pointer"
+                nativeButton={false}
+                render={<Link href="/login" />}
+              >
+                Log in
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 text-xs font-semibold cursor-pointer shadow-2xs"
+                nativeButton={false}
+                render={<Link href="/signup" />}
+              >
+                <UserPlusIcon className="size-3.5 mr-1" />
+                Sign Up
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -1,15 +1,9 @@
 "use client";
 
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   TripContext,
   TripPreferences,
@@ -29,14 +23,24 @@ import {
   LandmarkIcon,
   PalmtreeIcon,
   CameraIcon,
+  CheckIcon,
+  UsersIcon,
+  LeafIcon,
+  CarIcon,
+  SnowflakeIcon,
+  FishIcon,
+  FlameIcon,
+  DumbbellIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from "lucide-react";
 
 export interface PreferencesInputProps {
-  tripPreferences?: TripPreferences;
-  foodPreferences?: FoodPreferences;
+  tripPreferences?: TripPreferences | TripPreferences[];
+  foodPreferences?: FoodPreferences | FoodPreferences[];
   preferStayingIn?: PreferStayingIn;
-  onTripPreferencesChange?: (val: TripPreferences) => void;
-  onFoodPreferencesChange?: (val: FoodPreferences) => void;
+  onTripPreferencesChange?: (val: TripPreferences[]) => void;
+  onFoodPreferencesChange?: (val: FoodPreferences[]) => void;
   onPreferStayingInChange?: (val: PreferStayingIn) => void;
   className?: string;
 }
@@ -48,14 +52,38 @@ const STAYING_OPTIONS = [
   { value: PreferStayingIn.resort, label: "Resort", icon: SparklesIcon },
 ] as const;
 
-const QUICK_TRIP_STYLES = [
+const TRIP_STYLE_OPTIONS: { value: TripPreferences; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { value: TripPreferences.adventure, label: "Adventure", icon: MountainIcon },
   { value: TripPreferences.cultural, label: "Cultural", icon: LandmarkIcon },
   { value: TripPreferences.beachVacation, label: "Beach", icon: PalmtreeIcon },
   { value: TripPreferences.romantic, label: "Romantic", icon: HeartIcon },
   { value: TripPreferences.foodAndCulinary, label: "Culinary", icon: UtensilsIcon },
   { value: TripPreferences.offTheBeatenPath, label: "Explorer", icon: CameraIcon },
-] as const;
+  { value: TripPreferences.luxury, label: "Luxury", icon: SparklesIcon },
+  { value: TripPreferences.wellness, label: "Wellness", icon: HeartIcon },
+  { value: TripPreferences.familyFriendly, label: "Family-Friendly", icon: UsersIcon },
+  { value: TripPreferences.ecoTourism, label: "Eco-Tourism", icon: LeafIcon },
+  { value: TripPreferences.historical, label: "Historical", icon: LandmarkIcon },
+  { value: TripPreferences.wildlifeSafari, label: "Wildlife Safari", icon: CompassIcon },
+  { value: TripPreferences.roadTrip, label: "Road Trip", icon: CarIcon },
+  { value: TripPreferences.skiOrSnowboardTrip, label: "Ski & Snowboard", icon: SnowflakeIcon },
+  { value: TripPreferences.niche, label: "Niche", icon: SparklesIcon },
+];
+
+const FOOD_PREFERENCE_OPTIONS: { value: FoodPreferences; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: FoodPreferences.vegetarian, label: "Vegetarian", icon: LeafIcon },
+  { value: FoodPreferences.vegan, label: "Vegan", icon: LeafIcon },
+  { value: FoodPreferences.glutenFree, label: "Gluten-Free", icon: CheckIcon },
+  { value: FoodPreferences.dairyFree, label: "Dairy-Free", icon: CheckIcon },
+  { value: FoodPreferences.pescatarian, label: "Pescatarian", icon: FishIcon },
+  { value: FoodPreferences.keto, label: "Keto", icon: FlameIcon },
+  { value: FoodPreferences.paleo, label: "Paleo", icon: FlameIcon },
+  { value: FoodPreferences.halal, label: "Halal", icon: CheckIcon },
+  { value: FoodPreferences.kosher, label: "Kosher", icon: CheckIcon },
+  { value: FoodPreferences.lowCarb, label: "Low-Carb", icon: CheckIcon },
+  { value: FoodPreferences.highProtein, label: "High-Protein", icon: DumbbellIcon },
+  { value: FoodPreferences.organic, label: "Organic", icon: SparklesIcon },
+];
 
 export default function PreferencesInput({
   tripPreferences: propTripPref,
@@ -67,27 +95,52 @@ export default function PreferencesInput({
   className,
 }: PreferencesInputProps) {
   const tripContext = useContext(TripContext);
+  const [showAllStyles, setShowAllStyles] = useState(false);
 
-  const currentTripPref =
-    propTripPref ?? tripContext?.tripPreferences ?? TripPreferences.adventure;
-  const currentFoodPref =
-    propFoodPref ?? tripContext?.foodPreferences ?? FoodPreferences.vegetarian;
+  const rawTripPref = propTripPref ?? tripContext?.tripPreferences;
+  const currentTripPref: TripPreferences[] = React.useMemo(() => {
+    if (Array.isArray(rawTripPref)) return rawTripPref;
+    if (rawTripPref) return [rawTripPref as TripPreferences];
+    return [TripPreferences.adventure];
+  }, [rawTripPref]);
+
+  const rawFoodPref = propFoodPref ?? tripContext?.foodPreferences;
+  const currentFoodPref: FoodPreferences[] = React.useMemo(() => {
+    if (Array.isArray(rawFoodPref)) return rawFoodPref;
+    if (rawFoodPref) return [rawFoodPref as FoodPreferences];
+    return [FoodPreferences.vegetarian];
+  }, [rawFoodPref]);
+
   const currentStayingPref =
     propStayingPref ?? tripContext?.preferStayingIn ?? PreferStayingIn.hotel;
 
-  const setTripPref = (val: TripPreferences) => {
+  const toggleTripPref = (value: TripPreferences) => {
+    const isSelected = currentTripPref.includes(value);
+    let updated: TripPreferences[];
+    if (isSelected) {
+      updated = currentTripPref.filter((p) => p !== value);
+    } else {
+      updated = [...currentTripPref, value];
+    }
     if (onTripPreferencesChange) {
-      onTripPreferencesChange(val);
+      onTripPreferencesChange(updated);
     } else if (tripContext?.setTripPreferences) {
-      tripContext.setTripPreferences(val);
+      tripContext.setTripPreferences(updated);
     }
   };
 
-  const setFoodPref = (val: FoodPreferences) => {
+  const toggleFoodPref = (value: FoodPreferences) => {
+    const isSelected = currentFoodPref.includes(value);
+    let updated: FoodPreferences[];
+    if (isSelected) {
+      updated = currentFoodPref.filter((p) => p !== value);
+    } else {
+      updated = [...currentFoodPref, value];
+    }
     if (onFoodPreferencesChange) {
-      onFoodPreferencesChange(val);
+      onFoodPreferencesChange(updated);
     } else if (tripContext?.setFoodPreferences) {
-      tripContext.setFoodPreferences(val);
+      tripContext.setFoodPreferences(updated);
     }
   };
 
@@ -99,57 +152,71 @@ export default function PreferencesInput({
     }
   };
 
+  const visibleTripStyles = showAllStyles
+    ? TRIP_STYLE_OPTIONS
+    : TRIP_STYLE_OPTIONS.slice(0, 8);
+
   return (
     <div className={cn("flex flex-col gap-8 w-full max-w-lg mx-auto", className)}>
       {/* 1. Trip Style & Vibe */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <CompassIcon className="size-4 text-muted-foreground" />
-          <Label className="text-sm font-semibold text-foreground">
-            Trip Style & Vibe
-          </Label>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CompassIcon className="size-4 text-muted-foreground" />
+            <Label className="text-sm font-semibold text-foreground">
+              Trip Style & Vibe
+            </Label>
+          </div>
+          {currentTripPref.length > 0 && (
+            <Badge variant="secondary" className="text-[11px] font-normal px-2 py-0.5 rounded-full">
+              {currentTripPref.length} selected
+            </Badge>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {QUICK_TRIP_STYLES.map((style) => {
+          {visibleTripStyles.map((style) => {
             const Icon = style.icon;
-            const isActive = currentTripPref === style.value;
+            const isActive = currentTripPref.includes(style.value);
             return (
               <Button
                 key={style.value}
                 type="button"
                 variant={isActive ? "default" : "outline"}
                 size="sm"
-                onClick={() => setTripPref(style.value)}
+                onClick={() => toggleTripPref(style.value)}
                 className={cn(
-                  "rounded-full gap-1.5 text-xs transition-colors cursor-pointer",
-                  isActive ? "shadow-xs" : "text-muted-foreground hover:text-foreground"
+                  "rounded-full gap-1.5 text-xs transition-all cursor-pointer",
+                  isActive
+                    ? "shadow-xs font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 )}
               >
                 <Icon className="size-3.5" />
                 {style.label}
+                {isActive && <CheckIcon className="size-3 shrink-0 ml-0.5" />}
               </Button>
             );
           })}
         </div>
 
-        <div className="pt-1">
-          <Select
-            value={currentTripPref}
-            onValueChange={(v) => setTripPref(v as TripPreferences)}
-          >
-            <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background text-sm">
-              <SelectValue placeholder="More trip styles..." />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(TripPreferences).map((pref) => (
-                <SelectItem key={pref} value={pref}>
-                  {pref}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowAllStyles(!showAllStyles)}
+          className="w-full text-xs text-muted-foreground hover:text-foreground justify-center gap-1 h-8 mt-0.5 cursor-pointer"
+        >
+          {showAllStyles ? (
+            <>
+              Show fewer styles <ChevronUpIcon className="size-3.5" />
+            </>
+          ) : (
+            <>
+              More styles ({TRIP_STYLE_OPTIONS.length - 8} more) <ChevronDownIcon className="size-3.5" />
+            </>
+          )}
+        </Button>
       </div>
 
       {/* 2. Accommodation Preference */}
@@ -187,28 +254,45 @@ export default function PreferencesInput({
 
       {/* 3. Dietary & Food Preferences */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <UtensilsIcon className="size-4 text-muted-foreground" />
-          <Label className="text-sm font-semibold text-foreground">
-            Dietary & Food Preference
-          </Label>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UtensilsIcon className="size-4 text-muted-foreground" />
+            <Label className="text-sm font-semibold text-foreground">
+              Dietary & Food Preferences
+            </Label>
+          </div>
+          {currentFoodPref.length > 0 && (
+            <Badge variant="secondary" className="text-[11px] font-normal px-2 py-0.5 rounded-full">
+              {currentFoodPref.length} selected
+            </Badge>
+          )}
         </div>
 
-        <Select
-          value={currentFoodPref}
-          onValueChange={(v) => setFoodPref(v as FoodPreferences)}
-        >
-          <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background text-sm">
-            <SelectValue placeholder="Select dietary preference..." />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.values(FoodPreferences).map((food) => (
-              <SelectItem key={food} value={food}>
-                {food}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-2">
+          {FOOD_PREFERENCE_OPTIONS.map((food) => {
+            const Icon = food.icon;
+            const isActive = currentFoodPref.includes(food.value);
+            return (
+              <Button
+                key={food.value}
+                type="button"
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleFoodPref(food.value)}
+                className={cn(
+                  "rounded-full gap-1.5 text-xs transition-all cursor-pointer",
+                  isActive
+                    ? "shadow-xs font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
+              >
+                <Icon className="size-3.5" />
+                {food.label}
+                {isActive && <CheckIcon className="size-3 shrink-0 ml-0.5" />}
+              </Button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

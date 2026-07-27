@@ -18,8 +18,8 @@ type TripContextType = {
   endDate: string;
   noOfPeople: number;
   budget: number;
-  tripPreferences: TripPreferences;
-  foodPreferences: FoodPreferences;
+  tripPreferences: TripPreferences[];
+  foodPreferences: FoodPreferences[];
   preferStayingIn: PreferStayingIn;
 
   /** Complete form dataset altogether */
@@ -32,8 +32,8 @@ type TripContextType = {
   setEndDate: (val: React.SetStateAction<string>) => void;
   setNoOfPeople: (val: React.SetStateAction<number>) => void;
   setBudget: (val: React.SetStateAction<number>) => void;
-  setTripPreferences: (val: React.SetStateAction<TripPreferences>) => void;
-  setFoodPreferences: (val: React.SetStateAction<FoodPreferences>) => void;
+  setTripPreferences: (val: React.SetStateAction<TripPreferences[]>) => void;
+  setFoodPreferences: (val: React.SetStateAction<FoodPreferences[]>) => void;
   setPreferStayingIn: (val: React.SetStateAction<PreferStayingIn>) => void;
 
   clearTripData: () => void;
@@ -89,12 +89,12 @@ const TripProvider = ({ children }: { children: React.ReactNode }) => {
     form.setValue("budget", nextVal, { shouldValidate: true, shouldDirty: true });
   };
 
-  const setTripPreferences = (val: React.SetStateAction<TripPreferences>) => {
+  const setTripPreferences = (val: React.SetStateAction<TripPreferences[]>) => {
     const nextVal = typeof val === "function" ? val(form.getValues("tripPreferences")) : val;
     form.setValue("tripPreferences", nextVal, { shouldValidate: true, shouldDirty: true });
   };
 
-  const setFoodPreferences = (val: React.SetStateAction<FoodPreferences>) => {
+  const setFoodPreferences = (val: React.SetStateAction<FoodPreferences[]>) => {
     const nextVal = typeof val === "function" ? val(form.getValues("foodPreferences")) : val;
     form.setValue("foodPreferences", nextVal, { shouldValidate: true, shouldDirty: true });
   };
@@ -114,8 +114,16 @@ const TripProvider = ({ children }: { children: React.ReactNode }) => {
     endDate: tripData.endDate ?? "",
     noOfPeople: tripData.noOfPeople ?? 1,
     budget: tripData.budget ?? 1000,
-    tripPreferences: tripData.tripPreferences ?? TripPreferences.niche,
-    foodPreferences: tripData.foodPreferences ?? FoodPreferences.vegetarian,
+    tripPreferences: Array.isArray(tripData.tripPreferences)
+      ? tripData.tripPreferences
+      : tripData.tripPreferences
+      ? [tripData.tripPreferences]
+      : [TripPreferences.niche],
+    foodPreferences: Array.isArray(tripData.foodPreferences)
+      ? tripData.foodPreferences
+      : tripData.foodPreferences
+      ? [tripData.foodPreferences]
+      : [FoodPreferences.vegetarian],
     preferStayingIn: tripData.preferStayingIn ?? PreferStayingIn.hotel,
     tripData,
     form,
@@ -139,4 +147,4 @@ const TripProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export { TripContext, TripProvider, TripPreferences, FoodPreferences, PreferStayingIn };
+export { TripContext, TripProvider, TripPreferences, FoodPreferences, PreferStayingIn };

@@ -25,6 +25,7 @@ import {
   MapIcon,
   XIcon,
   Trash2Icon,
+  InfoIcon,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -38,14 +39,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
-const TripMap = dynamic(() => import("@/components/trip-map").then((m) => ({ default: m.TripMap })), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full min-h-[300px] items-center justify-center rounded-xl bg-muted/40">
-      <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
-    </div>
-  ),
-});
+const TripMap = dynamic(
+  () => import("@/components/trip-map").then((m) => ({ default: m.TripMap })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full min-h-[300px] items-center justify-center rounded-xl bg-muted/40">
+        <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  },
+);
 
 interface TripData {
   _id: string;
@@ -120,7 +124,11 @@ function getCategoryDot(category: string) {
   }
 }
 
-export default function TripDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function TripDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const router = useRouter();
   const [trip, setTrip] = useState<TripData | null>(null);
@@ -170,7 +178,8 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
           setError("Trip not found.");
         }
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Failed to load trip.";
+        const message =
+          err instanceof Error ? err.message : "Failed to load trip.";
         console.error("Error loading trip:", err);
         setError(message);
       } finally {
@@ -221,7 +230,9 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
         <Header />
         <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
           <Loader2Icon className="size-6 animate-spin text-muted-foreground mb-3" />
-          <h2 className="text-sm font-medium text-foreground">Loading Itinerary...</h2>
+          <h2 className="text-sm font-medium text-foreground">
+            Loading Itinerary...
+          </h2>
         </div>
       </div>
     );
@@ -235,16 +246,27 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
           <div className="size-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center mb-4">
             <AlertTriangleIcon className="size-5" />
           </div>
-          <h2 className="text-base font-semibold text-foreground">Itinerary Unavailable</h2>
+          <h2 className="text-base font-semibold text-foreground">
+            Itinerary Unavailable
+          </h2>
           <p className="text-xs text-muted-foreground mt-1 mb-6">
             {error || "We couldn't load the requested trip plan."}
           </p>
           <div className="flex gap-3">
-            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/dashboard" />}>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/dashboard" />}
+            >
               <ArrowLeftIcon className="size-3.5 mr-1.5" />
               Dashboard
             </Button>
-            <Button size="sm" nativeButton={false} render={<Link href="/create-trip" />}>
+            <Button
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/create-trip" />}
+            >
               <PlusIcon className="size-3.5 mr-1.5" />
               Create Trip
             </Button>
@@ -274,7 +296,8 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
     exceptions?.activitySiteClosedOnTripDay && {
       key: "activitySiteClosedOnTripDay",
       title: "Venue Closure Advisory",
-      description: "One or more planned activity sites may be closed on your scheduled trip dates.",
+      description:
+        "One or more planned activity sites may be closed on your scheduled trip dates.",
       icon: ClockIcon,
     },
     exceptions?.partySizeMismatches && {
@@ -286,10 +309,16 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
     exceptions?.contradictoryPreferences && {
       key: "contradictoryPreferences",
       title: "Conflicting Preferences",
-      description: "Some selected travel preferences conflict. The AI created a balanced compromise plan.",
+      description:
+        "Some selected travel preferences conflict. The AI created a balanced compromise plan.",
       icon: HelpCircleIcon,
     },
-  ].filter(Boolean) as { key: string; title: string; description: string; icon: any }[];
+  ].filter(Boolean) as {
+    key: string;
+    title: string;
+    description: string;
+    icon: any;
+  }[];
 
   const hasActiveExceptions = activeExceptionsList.length > 0;
 
@@ -310,14 +339,23 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
                 Back
               </Link>
               <span className="text-border">•</span>
-              <Badge variant="secondary" className="gap-1.5 text-xs font-medium bg-muted text-foreground border-border/60">
+              <Badge
+                variant="secondary"
+                className="gap-1.5 text-xs font-medium bg-muted text-foreground border-border/60"
+              >
                 <MapPinIcon className="size-3 text-muted-foreground shrink-0" />
                 {trip.tripLocation}
               </Badge>
               {hasActiveExceptions && (
-                <Badge variant="outline" className="gap-1 text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                <Badge
+                  variant="outline"
+                  className="gap-1 text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                >
                   <AlertTriangleIcon className="size-3 shrink-0" />
-                  {activeExceptionsList.length} {activeExceptionsList.length === 1 ? "Advisory" : "Advisories"}
+                  {activeExceptionsList.length}{" "}
+                  {activeExceptionsList.length === 1
+                    ? "Advisory"
+                    : "Advisories"}
                 </Badge>
               )}
             </div>
@@ -380,7 +418,8 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
           <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             <div className="rounded-xl border border-border/80 bg-card p-3.5 sm:p-4 space-y-1 shadow-2xs">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                <CalendarIcon className="size-3.5 text-muted-foreground shrink-0" /> Dates
+                <CalendarIcon className="size-3.5 text-muted-foreground shrink-0" />{" "}
+                Dates
               </span>
               <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                 {formatDate(trip.startDate)} – {formatDate(trip.endDate)}
@@ -388,15 +427,20 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <div className="rounded-xl border border-border/80 bg-card p-3.5 sm:p-4 space-y-1 shadow-2xs">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                <WalletIcon className="size-3.5 text-muted-foreground shrink-0" /> Est. Cost
+                <WalletIcon className="size-3.5 text-muted-foreground shrink-0" />{" "}
+                Est. Cost
               </span>
               <p className="font-semibold text-foreground text-sm sm:text-base truncate">
-                ${itinerary.estimatedTotalCost?.toLocaleString() || trip.budget.toLocaleString()} USD
+                $
+                {itinerary.estimatedTotalCost?.toLocaleString() ||
+                  trip.budget.toLocaleString()}{" "}
+                USD
               </p>
             </div>
             <div className="rounded-xl border border-border/80 bg-card p-3.5 sm:p-4 space-y-1 shadow-2xs">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                <UsersIcon className="size-3.5 text-muted-foreground shrink-0" /> Party Size
+                <UsersIcon className="size-3.5 text-muted-foreground shrink-0" />{" "}
+                Party Size
               </span>
               <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                 {trip.noOfPeople} {trip.noOfPeople === 1 ? "Person" : "People"}
@@ -404,7 +448,8 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <div className="rounded-xl border border-border/80 bg-card p-3.5 sm:p-4 space-y-1 shadow-2xs">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                <CompassIcon className="size-3.5 text-muted-foreground shrink-0" /> Duration
+                <CompassIcon className="size-3.5 text-muted-foreground shrink-0" />{" "}
+                Duration
               </span>
               <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                 {daysList.length} Days Planned
@@ -417,13 +462,24 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
             {/* Left: itinerary timeline */}
-            <div className="flex-1 min-w-0 space-y-10">
-              {daysList.map((day) => (
+            <div className="flex-1 min-w-0 space-y-6">
+              <p className="text-xs sm:text-sm text-muted-foreground bg-muted/50 border border-border/60 rounded-lg px-3.5 py-2.5 flex items-center gap-2 shadow-2xs">
+                <InfoIcon className="size-4 text-primary shrink-0" />
+                <span>
+                  <strong className="font-semibold text-foreground">Tip:</strong>{" "}
+                  Click on any activity below to view it in the map!
+                </span>
+              </p>
+
+              <div className="space-y-10">
+                {daysList.map((day) => (
                 <section key={`day-${day.dayNumber}`} className="space-y-5">
                   <div className="flex items-baseline justify-between border-b border-border/80 pb-2">
                     <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
                       <span>Day {day.dayNumber}</span>
-                      <span className="text-muted-foreground font-normal text-sm">— {day.theme}</span>
+                      <span className="text-muted-foreground font-normal text-sm">
+                        — {day.theme}
+                      </span>
                     </h2>
                     <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded border border-border/40">
                       {day.activities?.length || 0} activities
@@ -458,22 +514,33 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
                             </span>
                             <span className="text-muted-foreground/40">•</span>
                             <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
-                              <span className={`size-1.5 rounded-full ${getCategoryDot(act.category)}`} />
+                              <span
+                                className={`size-1.5 rounded-full ${getCategoryDot(act.category)}`}
+                              />
                               {getCategoryName(act.category)}
                             </span>
                             {isSelected && (
-                              <Badge variant="default" className="text-[10px] py-0 px-1.5 h-4 gap-1">
-                                <MapPinIcon className="size-2.5" /> Locked on Map
+                              <Badge
+                                variant="default"
+                                className="text-[10px] py-0 px-1.5 h-4 gap-1"
+                              >
+                                <MapPinIcon className="size-2.5" /> Locked on
+                                Map
                               </Badge>
                             )}
                             {act.bookingRequired && (
-                              <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4 text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] py-0 px-1.5 h-4 text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10"
+                              >
                                 Booking Suggested
                               </Badge>
                             )}
                           </div>
 
-                          <h3 className="font-heading text-base font-bold text-foreground">{act.title}</h3>
+                          <h3 className="font-heading text-base font-bold text-foreground">
+                            {act.title}
+                          </h3>
 
                           <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                             <MapPinIcon className="size-3 text-muted-foreground shrink-0" />
@@ -525,13 +592,18 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
                   </div>
                 </section>
               ))}
+              </div>
             </div>
 
             {/* Right: sticky map (desktop) */}
             <div className="hidden lg:block lg:w-[45%] xl:w-[50%] flex-shrink-0">
               <div className="sticky top-24">
                 <div className="h-[calc(100dvh-8rem)]">
-                  <TripMap activities={flatActivities} activeKey={activeKey} onSelectActivity={handleActivityClick} />
+                  <TripMap
+                    activities={flatActivities}
+                    activeKey={activeKey}
+                    onSelectActivity={handleActivityClick}
+                  />
                 </div>
               </div>
             </div>
@@ -541,8 +613,16 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* Mobile map toggle button */}
       <div className="lg:hidden fixed bottom-6 right-6 z-50">
-        <Button size="icon" className="size-12 rounded-full shadow-lg" onClick={() => setMapOpen(!mapOpen)}>
-          {mapOpen ? <XIcon className="size-5" /> : <MapIcon className="size-5" />}
+        <Button
+          size="icon"
+          className="size-12 rounded-full shadow-lg"
+          onClick={() => setMapOpen(!mapOpen)}
+        >
+          {mapOpen ? (
+            <XIcon className="size-5" />
+          ) : (
+            <MapIcon className="size-5" />
+          )}
         </Button>
       </div>
 
@@ -550,7 +630,11 @@ export default function TripDetailPage({ params }: { params: Promise<{ id: strin
       {mapOpen && (
         <div className="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm">
           <div className="absolute inset-x-4 top-20 bottom-24 rounded-xl overflow-hidden border border-border shadow-xl">
-            <TripMap activities={flatActivities} activeKey={activeKey} onSelectActivity={handleActivityClick} />
+            <TripMap
+              activities={flatActivities}
+              activeKey={activeKey}
+              onSelectActivity={handleActivityClick}
+            />
           </div>
           <div className="absolute top-4 right-4">
             <Button

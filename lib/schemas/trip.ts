@@ -16,6 +16,7 @@ export enum TripPreferences {
   foodAndCulinary = "Food and Culinary",
   roadTrip = "Road Trip",
   skiOrSnowboardTrip = "Ski or Snowboard Trip",
+  letTheAIPick = "Let the AI Pick",
 }
 
 export enum FoodPreferences {

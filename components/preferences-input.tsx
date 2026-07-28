@@ -52,25 +52,62 @@ const STAYING_OPTIONS = [
   { value: PreferStayingIn.resort, label: "Resort", icon: SparklesIcon },
 ] as const;
 
-const TRIP_STYLE_OPTIONS: { value: TripPreferences; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const TRIP_STYLE_OPTIONS: {
+  value: TripPreferences;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  {
+    value: TripPreferences.letTheAIPick,
+    label: "Let the AI Pick",
+    icon: SparklesIcon,
+  },
   { value: TripPreferences.adventure, label: "Adventure", icon: MountainIcon },
   { value: TripPreferences.cultural, label: "Cultural", icon: LandmarkIcon },
   { value: TripPreferences.beachVacation, label: "Beach", icon: PalmtreeIcon },
   { value: TripPreferences.romantic, label: "Romantic", icon: HeartIcon },
-  { value: TripPreferences.foodAndCulinary, label: "Culinary", icon: UtensilsIcon },
-  { value: TripPreferences.offTheBeatenPath, label: "Explorer", icon: CameraIcon },
+  {
+    value: TripPreferences.foodAndCulinary,
+    label: "Culinary",
+    icon: UtensilsIcon,
+  },
+  {
+    value: TripPreferences.offTheBeatenPath,
+    label: "Explorer",
+    icon: CameraIcon,
+  },
   { value: TripPreferences.luxury, label: "Luxury", icon: SparklesIcon },
   { value: TripPreferences.wellness, label: "Wellness", icon: HeartIcon },
-  { value: TripPreferences.familyFriendly, label: "Family-Friendly", icon: UsersIcon },
+  {
+    value: TripPreferences.familyFriendly,
+    label: "Family-Friendly",
+    icon: UsersIcon,
+  },
   { value: TripPreferences.ecoTourism, label: "Eco-Tourism", icon: LeafIcon },
-  { value: TripPreferences.historical, label: "Historical", icon: LandmarkIcon },
-  { value: TripPreferences.wildlifeSafari, label: "Wildlife Safari", icon: CompassIcon },
+  {
+    value: TripPreferences.historical,
+    label: "Historical",
+    icon: LandmarkIcon,
+  },
+  {
+    value: TripPreferences.wildlifeSafari,
+    label: "Wildlife Safari",
+    icon: CompassIcon,
+  },
   { value: TripPreferences.roadTrip, label: "Road Trip", icon: CarIcon },
-  { value: TripPreferences.skiOrSnowboardTrip, label: "Ski & Snowboard", icon: SnowflakeIcon },
+  {
+    value: TripPreferences.skiOrSnowboardTrip,
+    label: "Ski & Snowboard",
+    icon: SnowflakeIcon,
+  },
   { value: TripPreferences.niche, label: "Niche", icon: SparklesIcon },
 ];
 
-const FOOD_PREFERENCE_OPTIONS: { value: FoodPreferences; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const FOOD_PREFERENCE_OPTIONS: {
+  value: FoodPreferences;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { value: FoodPreferences.vegetarian, label: "Vegetarian", icon: LeafIcon },
   { value: FoodPreferences.vegan, label: "Vegan", icon: LeafIcon },
   { value: FoodPreferences.glutenFree, label: "Gluten-Free", icon: CheckIcon },
@@ -81,7 +118,11 @@ const FOOD_PREFERENCE_OPTIONS: { value: FoodPreferences; label: string; icon: Re
   { value: FoodPreferences.halal, label: "Halal", icon: CheckIcon },
   { value: FoodPreferences.kosher, label: "Kosher", icon: CheckIcon },
   { value: FoodPreferences.lowCarb, label: "Low-Carb", icon: CheckIcon },
-  { value: FoodPreferences.highProtein, label: "High-Protein", icon: DumbbellIcon },
+  {
+    value: FoodPreferences.highProtein,
+    label: "High-Protein",
+    icon: DumbbellIcon,
+  },
   { value: FoodPreferences.organic, label: "Organic", icon: SparklesIcon },
 ];
 
@@ -157,7 +198,9 @@ export default function PreferencesInput({
     : TRIP_STYLE_OPTIONS.slice(0, 8);
 
   return (
-    <div className={cn("flex flex-col gap-8 w-full max-w-lg mx-auto", className)}>
+    <div
+      className={cn("flex flex-col gap-8 w-full max-w-lg mx-auto", className)}
+    >
       {/* 1. Trip Style & Vibe */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
@@ -168,7 +211,10 @@ export default function PreferencesInput({
             </Label>
           </div>
           {currentTripPref.length > 0 && (
-            <Badge variant="secondary" className="text-[11px] font-normal px-2 py-0.5 rounded-full">
+            <Badge
+              variant="secondary"
+              className="text-[11px] font-normal px-2 py-0.5 rounded-full"
+            >
               {currentTripPref.length} selected
             </Badge>
           )}
@@ -189,7 +235,7 @@ export default function PreferencesInput({
                   "rounded-full gap-1.5 text-xs transition-all cursor-pointer",
                   isActive
                     ? "shadow-xs font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
                 )}
               >
                 <Icon className="size-3.5" />
@@ -213,7 +259,8 @@ export default function PreferencesInput({
             </>
           ) : (
             <>
-              More styles ({TRIP_STYLE_OPTIONS.length - 8} more) <ChevronDownIcon className="size-3.5" />
+              More styles ({TRIP_STYLE_OPTIONS.length - 8} more){" "}
+              <ChevronDownIcon className="size-3.5" />
             </>
           )}
         </Button>
@@ -241,7 +288,7 @@ export default function PreferencesInput({
                   "flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all cursor-pointer text-center",
                   isActive
                     ? "border-foreground bg-foreground text-background shadow-xs font-semibold"
-                    : "border-border bg-background text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                    : "border-border bg-background text-muted-foreground hover:border-foreground/20 hover:text-foreground",
                 )}
               >
                 <Icon className="size-5" />
@@ -262,7 +309,10 @@ export default function PreferencesInput({
             </Label>
           </div>
           {currentFoodPref.length > 0 && (
-            <Badge variant="secondary" className="text-[11px] font-normal px-2 py-0.5 rounded-full">
+            <Badge
+              variant="secondary"
+              className="text-[11px] font-normal px-2 py-0.5 rounded-full"
+            >
               {currentFoodPref.length} selected
             </Badge>
           )}
@@ -283,7 +333,7 @@ export default function PreferencesInput({
                   "rounded-full gap-1.5 text-xs transition-all cursor-pointer",
                   isActive
                     ? "shadow-xs font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
                 )}
               >
                 <Icon className="size-3.5" />

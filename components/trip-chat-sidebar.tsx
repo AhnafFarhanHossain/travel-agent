@@ -98,7 +98,7 @@ export function TripChatSidebar({
     [tripId, currentItinerary],
   );
 
-  const { messages, sendMessage, status, error, reload } = useChat({
+  const { messages, sendMessage, status, error, regenerate, clearError } = useChat({
     id: tripId,
     messages: intialMessages,
     transport,
@@ -383,6 +383,47 @@ export function TripChatSidebar({
           <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 rounded-lg w-fit">
             <Loader2Icon className="size-3.5 animate-spin text-primary" />
             <span>AI Concierge is thinking...</span>
+          </div>
+        )}
+
+        {(rateLimitError || isRateLimitError(error)) && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 space-y-2 text-left animate-in fade-in duration-200">
+            <div className="flex items-center justify-between gap-2 text-amber-700 dark:text-amber-400 font-semibold text-xs">
+              <span className="flex items-center gap-1.5">
+                <AlertTriangleIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                AI Rate Limit Reached (429)
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {rateLimitError ||
+                error?.message ||
+                "You have hit the AI request rate limit. Please wait a moment before sending another message."}
+            </p>
+            <div className="flex items-center gap-2 pt-1">
+              {regenerate && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  className="text-xs h-7 border-amber-500/30 bg-background text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 rounded-full"
+                  onClick={() => {
+                    setRateLimitError(null);
+                    if (clearError) clearError();
+                    regenerate();
+                  }}
+                >
+                  <RefreshCwIcon className="size-3 mr-1" />
+                  Retry Request
+                </Button>
+              )}
+              <Button
+                size="xs"
+                variant="ghost"
+                className="text-xs h-7 text-muted-foreground hover:text-foreground rounded-full"
+                onClick={() => setRateLimitError(null)}
+              >
+                Dismiss
+              </Button>
+            </div>
           </div>
         )}
 

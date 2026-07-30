@@ -26,6 +26,9 @@ import {
   XIcon,
   Trash2Icon,
   InfoIcon,
+  SparklesIcon,
+  CheckIcon,
+  Undo2Icon,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -38,6 +41,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { Snapshot } from "../types";
+import { TripChatSidebar } from "@/components/trip-chat-sidebar";
 
 const TripMap = dynamic(
   () => import("@/components/trip-map").then((m) => ({ default: m.TripMap })),
@@ -48,7 +53,7 @@ const TripMap = dynamic(
         <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
       </div>
     ),
-  },
+  }
 );
 
 interface TripData {
@@ -126,10 +131,14 @@ function getCategoryDot(category: string) {
 
 export default function TripDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ id?: string }>;
 }) {
-  const { id } = use(params);
+  const { id: paramId } = use(params);
+  const searchParamsObj = searchParams ? use(searchParams) : undefined;
+  const id = paramId || searchParamsObj?.id || "";
   const router = useRouter();
   const [trip, setTrip] = useState<TripData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,6 +148,14 @@ export default function TripDetailPage({
   const [mapOpen, setMapOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+
+  // Snapshots state for AI trip customization
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [activeSnapshot, setActiveSnapshot] = useState<Snapshot | null>(null);
+  const [savedItinerary, setSavedItinerary] = useState<Itinerary | null>(null);
+
   const activeKey = selectedKey ?? hoveredKey;
 
   async function handleDeleteTrip() {
@@ -174,6 +191,16 @@ export default function TripDetailPage({
         const data = await res.json();
         if (data.trip) {
           setTrip(data.trip);
+          setSavedItinerary(data.trip.itinerary);
+          const initialSnapshot: Snapshot = {
+            id: `snap-original-${data.trip._id}`,
+            description: "Original Plan",
+            timestamp: data.trip.createdAt,
+            itinerary: data.trip.itinerary,
+            status: "applied",
+          };
+          setActiveSnapshot(initialSnapshot);
+          setSnapshots([initialSnapshot]);
         } else {
           setError("Trip not found.");
         }
@@ -192,12 +219,13 @@ export default function TripDetailPage({
     }
   }, [id]);
 
-  const { groundingMetadata, safetyRating } = trip || {};
+  // Derived current itinerary (active preview or saved plan)
+  const currentItinerary = activeSnapshot?.itinerary || trip?.itinerary;
 
   const flatActivities = useMemo<FlatActivity[]>(() => {
-    if (!trip?.itinerary?.days) return [];
+    if (!currentItinerary?.days) return [];
     const result: FlatActivity[] = [];
-    for (const day of trip.itinerary.days) {
+    for (const day of currentItinerary.days) {
       for (const act of day.activities || []) {
         result.push({
           key: `d${day.dayNumber}-${act.timeSlot}-${act.title}`,
@@ -208,7 +236,7 @@ export default function TripDetailPage({
       }
     }
     return result;
-  }, [trip]);
+  }, [currentItinerary]);
 
   const handleActivityHover = useCallback((key: string | null) => {
     setHoveredKey(key);
@@ -219,10 +247,86 @@ export default function TripDetailPage({
       setSelectedKey(null);
       return;
     }
-    // Toggle lock state: if already selected, unlock (set null); otherwise lock to clicked key
     setSelectedKey((prev) => (prev === key ? null : key));
     setMapOpen(true);
   }, []);
+
+  // AI Snapshot handlers
+  const handleProposeSnapshot = useCallback(
+    (newItinerary: Itinerary, summary: string) => {
+      const newSnap: Snapshot = {
+        id: `snap-ai-${Date.now()}`,
+        description: summary || "AI Revision",
+        timestamp: new Date().toISOString(),
+        itinerary: newItinerary,
+        status: "draft",
+      };
+
+      setSnapshots((prev) => [newSnap, ...prev]);
+      setActiveSnapshot(newSnap);
+    },
+    []
+  );
+
+  const handleSelectSnapshot = useCallback((snapshot: Snapshot) => {
+    setActiveSnapshot(snapshot);
+  }, []);
+
+  const handleApplySnapshot = async (snapshot: Snapshot) => {
+    try {
+      setIsApplying(true);
+      const res = await fetch(`/api/trips/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itinerary: snapshot.itinerary }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        if (res.status === 429) {
+          throw new Error("AI Rate Limit Exceeded (429). Please wait a moment before saving changes.");
+        }
+        throw new Error(data.message || "Failed to save itinerary changes");
+      }
+
+      const updatedSnap: Snapshot = {
+        ...snapshot,
+        status: "applied",
+      };
+
+      setSavedItinerary(snapshot.itinerary);
+      setActiveSnapshot(updatedSnap);
+      setSnapshots((prev) =>
+        prev.map((s) => (s.id === snapshot.id ? updatedSnap : s))
+      );
+      if (trip) {
+        setTrip({ ...trip, itinerary: snapshot.itinerary });
+      }
+
+      toast.success("Itinerary revision applied and saved!", {
+        description: "Your trip plan in the database has been updated.",
+      });
+    } catch (err: any) {
+      console.error("Error applying snapshot:", err);
+      toast.error(err.message || "Failed to apply itinerary changes");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  const handleDiscardSnapshot = () => {
+    if (savedItinerary) {
+      const originalSnap = snapshots.find((s) => s.status === "applied") || {
+        id: `snap-saved-${Date.now()}`,
+        description: "Saved Plan",
+        timestamp: new Date().toISOString(),
+        itinerary: savedItinerary,
+        status: "applied",
+      };
+      setActiveSnapshot(originalSnap);
+      toast.info("Reverted preview back to saved plan.");
+    }
+  };
 
   if (loading) {
     return (
@@ -238,7 +342,7 @@ export default function TripDetailPage({
     );
   }
 
-  if (error || !trip || !trip.itinerary) {
+  if (error || !trip || !currentItinerary) {
     return (
       <div className="flex min-h-dvh flex-col bg-background">
         <Header />
@@ -276,15 +380,14 @@ export default function TripDetailPage({
     );
   }
 
-  const { itinerary } = trip;
-  const daysList = itinerary.days || [];
-  const exceptions = itinerary.exceptionCases || null;
+  const daysList = currentItinerary.days || [];
+  const exceptions = currentItinerary.exceptionCases || null;
 
   const activeExceptionsList = [
     exceptions?.ranOutOfBudget && {
       key: "ranOutOfBudget",
       title: "Budget Exceeded",
-      description: `The calculated itinerary total ($${itinerary.estimatedTotalCost?.toLocaleString()} USD) exceeds your target budget ($${trip.budget.toLocaleString()} USD).`,
+      description: `The calculated itinerary total ($${currentItinerary.estimatedTotalCost?.toLocaleString()} USD) exceeds your target budget ($${trip.budget.toLocaleString()} USD).`,
       icon: WalletIcon,
     },
     exceptions?.unrealisticBudget && {
@@ -329,7 +432,7 @@ export default function TripDetailPage({
       <main className="flex-1">
         {/* Document Header — full width with stat cards */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-border">
-          <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">
             <div className="flex items-center gap-3">
               <Link
                 href="/dashboard"
@@ -360,23 +463,36 @@ export default function TripDetailPage({
               )}
             </div>
 
-            <Button
-              variant="outline"
-              size="xs"
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors border-border/80"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <Trash2Icon className="size-3.5 mr-1 text-destructive" />
-              Delete Trip
-            </Button>
+            {/* Header Actions */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={sidebarOpen ? "default" : "outline"}
+                size="xs"
+                className="gap-1.5 font-medium border-border/80"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                <SparklesIcon className="size-3.5 text-primary" />
+                <span>{sidebarOpen ? "Close AI" : "Customize with AI"}</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="xs"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors border-border/80"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2Icon className="size-3.5 mr-1 text-destructive" />
+                Delete
+              </Button>
+            </div>
           </div>
 
           <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-            {itinerary.tripTitle || `Trip to ${trip.tripLocation}`}
+            {currentItinerary.tripTitle || `Trip to ${trip.tripLocation}`}
           </h1>
 
           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-3xl mt-2">
-            {itinerary.summary}
+            {currentItinerary.summary}
           </p>
 
           {/* Dynamic Exception Cases Banner & Cards */}
@@ -414,7 +530,7 @@ export default function TripDetailPage({
             </div>
           )}
 
-          {/* Stat Cards Grid — High visual prominence */}
+          {/* Stat Cards Grid */}
           <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             <div className="rounded-xl border border-border/80 bg-card p-3.5 sm:p-4 space-y-1 shadow-2xs">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
@@ -432,7 +548,7 @@ export default function TripDetailPage({
               </span>
               <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                 $
-                {itinerary.estimatedTotalCost?.toLocaleString() ||
+                {currentItinerary.estimatedTotalCost?.toLocaleString() ||
                   trip.budget.toLocaleString()}{" "}
                 USD
               </p>
@@ -463,6 +579,48 @@ export default function TripDetailPage({
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
             {/* Left: itinerary timeline */}
             <div className="flex-1 min-w-0 space-y-6">
+              {/* Draft Snapshot Banner */}
+              {activeSnapshot?.status === "draft" && (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                      <SparklesIcon className="size-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-semibold text-primary uppercase tracking-wider block">
+                        Previewing AI Draft Revision
+                      </span>
+                      <p className="text-xs sm:text-sm font-semibold text-foreground">
+                        "{activeSnapshot.description}"
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      className="text-xs border-border/80 bg-background"
+                      onClick={handleDiscardSnapshot}
+                    >
+                      <Undo2Icon className="size-3.5 mr-1" />
+                      Discard
+                    </Button>
+                    <Button
+                      size="xs"
+                      disabled={isApplying}
+                      onClick={() => handleApplySnapshot(activeSnapshot)}
+                    >
+                      {isApplying ? (
+                        <Loader2Icon className="size-3.5 animate-spin mr-1" />
+                      ) : (
+                        <CheckIcon className="size-3.5 mr-1" />
+                      )}
+                      Apply to Trip
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <p className="text-xs sm:text-sm text-muted-foreground bg-muted/50 border border-border/60 rounded-lg px-3.5 py-2.5 flex items-center gap-2 shadow-2xs">
                 <InfoIcon className="size-4 text-primary shrink-0" />
                 <span>
@@ -473,125 +631,127 @@ export default function TripDetailPage({
 
               <div className="space-y-10">
                 {daysList.map((day) => (
-                <section key={`day-${day.dayNumber}`} className="space-y-5">
-                  <div className="flex items-baseline justify-between border-b border-border/80 pb-2">
-                    <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
-                      <span>Day {day.dayNumber}</span>
-                      <span className="text-muted-foreground font-normal text-sm">
-                        — {day.theme}
+                  <section key={`day-${day.dayNumber}`} className="space-y-5">
+                    <div className="flex items-baseline justify-between border-b border-border/80 pb-2">
+                      <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
+                        <span>Day {day.dayNumber}</span>
+                        <span className="text-muted-foreground font-normal text-sm">
+                          — {day.theme}
+                        </span>
+                      </h2>
+                      <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded border border-border/40">
+                        {day.activities?.length || 0} activities
                       </span>
-                    </h2>
-                    <span className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded border border-border/40">
-                      {day.activities?.length || 0} activities
-                    </span>
-                  </div>
+                    </div>
 
-                  <div className="space-y-3">
-                    {day.activities?.map((act, actIdx) => {
-                      const actKey = `d${day.dayNumber}-${act.timeSlot}-${act.title}`;
-                      const isSelected = selectedKey === actKey;
-                      const isHovered = hoveredKey === actKey;
-                      const isActive = activeKey === actKey;
+                    <div className="space-y-3">
+                      {day.activities?.map((act, actIdx) => {
+                        const actKey = `d${day.dayNumber}-${act.timeSlot}-${act.title}`;
+                        const isSelected = selectedKey === actKey;
+                        const isHovered = hoveredKey === actKey;
+                        const isActive = activeKey === actKey;
 
-                      return (
-                        <div
-                          key={`act-${day.dayNumber}-${actIdx}`}
-                          className={`rounded-xl border p-4 space-y-2 transition-all duration-200 cursor-pointer ${
-                            isSelected
-                              ? "border-foreground/40 bg-accent/60 shadow-2xs"
-                              : isActive
-                                ? "border-border bg-muted/40"
-                                : "border-border/80 bg-card hover:border-foreground/20 hover:shadow-2xs"
-                          }`}
-                          onMouseEnter={() => handleActivityHover(actKey)}
-                          onMouseLeave={() => handleActivityHover(null)}
-                          onClick={() => handleActivityClick(actKey)}
-                        >
-                          <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span className="font-mono text-muted-foreground flex items-center gap-1 font-medium">
-                              <ClockIcon className="size-3" />
-                              {act.timeSlot}
-                            </span>
-                            <span className="text-muted-foreground/40">•</span>
-                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
-                              <span
-                                className={`size-1.5 rounded-full ${getCategoryDot(act.category)}`}
-                              />
-                              {getCategoryName(act.category)}
-                            </span>
-                            {isSelected && (
-                              <Badge
-                                variant="default"
-                                className="text-[10px] py-0 px-1.5 h-4 gap-1"
-                              >
-                                <MapPinIcon className="size-2.5" /> Locked on
-                                Map
-                              </Badge>
-                            )}
-                            {act.bookingRequired && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] py-0 px-1.5 h-4 text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10"
-                              >
-                                Booking Suggested
-                              </Badge>
-                            )}
-                          </div>
-
-                          <h3 className="font-heading text-base font-bold text-foreground">
-                            {act.title}
-                          </h3>
-
-                          <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                            <MapPinIcon className="size-3 text-muted-foreground shrink-0" />
-                            {act.locationName}
-                          </p>
-
-                          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-0.5">
-                            {act.description}
-                          </p>
-
-                          <div className="flex items-center gap-4 text-xs pt-1">
-                            {act.estimatedCost !== undefined && (
-                              <span className="font-mono font-semibold text-foreground">
-                                ${act.estimatedCost} USD
+                        return (
+                          <div
+                            key={`act-${day.dayNumber}-${actIdx}`}
+                            className={`rounded-xl border p-4 space-y-2 transition-all duration-200 cursor-pointer ${
+                              isSelected
+                                ? "border-foreground/40 bg-accent/60 shadow-2xs"
+                                : isActive
+                                  ? "border-border bg-muted/40"
+                                  : "border-border/80 bg-card hover:border-foreground/20 hover:shadow-2xs"
+                            }`}
+                            onMouseEnter={() => handleActivityHover(actKey)}
+                            onMouseLeave={() => handleActivityHover(null)}
+                            onClick={() => handleActivityClick(actKey)}
+                          >
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                              <span className="font-mono text-muted-foreground flex items-center gap-1 font-medium">
+                                <ClockIcon className="size-3" />
+                                {act.timeSlot}
                               </span>
-                            )}
+                              <span className="text-muted-foreground/40">
+                                •
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
+                                <span
+                                  className={`size-1.5 rounded-full ${getCategoryDot(act.category)}`}
+                                />
+                                {getCategoryName(act.category)}
+                              </span>
+                              {isSelected && (
+                                <Badge
+                                  variant="default"
+                                  className="text-[10px] py-0 px-1.5 h-4 gap-1"
+                                >
+                                  <MapPinIcon className="size-2.5" /> Locked on
+                                  Map
+                                </Badge>
+                              )}
+                              {act.bookingRequired && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] py-0 px-1.5 h-4 text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10"
+                                >
+                                  Booking Suggested
+                                </Badge>
+                              )}
+                            </div>
 
-                            {act.bookingLink ? (
-                              <a
-                                href={
-                                  act.bookingLink.startsWith("http")
-                                    ? act.bookingLink
-                                    : `https://www.google.com/search?q=${encodeURIComponent(act.bookingLink || act.title)}`
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:underline"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                Reserve Details
-                                <ExternalLinkIcon className="size-3" />
-                              </a>
-                            ) : (
-                              <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${act.title} ${act.locationName}`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground font-medium transition-colors"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                Map
-                                <ExternalLinkIcon className="size-3" />
-                              </a>
-                            )}
+                            <h3 className="font-heading text-base font-bold text-foreground">
+                              {act.title}
+                            </h3>
+
+                            <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                              <MapPinIcon className="size-3 text-muted-foreground shrink-0" />
+                              {act.locationName}
+                            </p>
+
+                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-0.5">
+                              {act.description}
+                            </p>
+
+                            <div className="flex items-center gap-4 text-xs pt-1">
+                              {act.estimatedCost !== undefined && (
+                                <span className="font-mono font-semibold text-foreground">
+                                  ${act.estimatedCost} USD
+                                </span>
+                              )}
+
+                              {act.bookingLink ? (
+                                <a
+                                  href={
+                                    act.bookingLink.startsWith("http")
+                                      ? act.bookingLink
+                                      : `https://www.google.com/search?q=${encodeURIComponent(act.bookingLink || act.title)}`
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Reserve Details
+                                  <ExternalLinkIcon className="size-3" />
+                                </a>
+                              ) : (
+                                <a
+                                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${act.title} ${act.locationName}`)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground font-medium transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Map
+                                  <ExternalLinkIcon className="size-3" />
+                                </a>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
               </div>
             </div>
 
@@ -648,6 +808,21 @@ export default function TripDetailPage({
           </div>
         </div>
       )}
+
+      {/* AI Chat Sidebar */}
+      <TripChatSidebar
+        tripId={trip?._id || id}
+        destination={trip.tripLocation}
+        targetBudget={trip.budget}
+        currentItinerary={currentItinerary}
+        activeSnapshot={activeSnapshot}
+        snapshots={snapshots}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onProposeSnapshot={handleProposeSnapshot}
+        onSelectSnapshot={handleSelectSnapshot}
+        onApplySnapshot={handleApplySnapshot}
+      />
 
       <AlertDialog
         open={showDeleteDialog}

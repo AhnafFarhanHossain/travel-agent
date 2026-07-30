@@ -101,7 +101,11 @@ const ChatPage = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <CompassIcon className="size-3.5 text-muted-foreground shrink-0" />
-                <span className="truncate">{tripData.tripPreferences}</span>
+                <span className="truncate">
+                  {Array.isArray(tripData.tripPreferences)
+                    ? tripData.tripPreferences.join(", ")
+                    : tripData.tripPreferences}
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Building2Icon className="size-3.5 text-muted-foreground shrink-0" />
@@ -109,7 +113,11 @@ const ChatPage = () => {
               </div>
               <div className="flex items-center gap-1.5 col-span-2 sm:col-span-1">
                 <UtensilsIcon className="size-3.5 text-muted-foreground shrink-0" />
-                <span className="truncate">{tripData.foodPreferences}</span>
+                <span className="truncate">
+                  {Array.isArray(tripData.foodPreferences)
+                    ? tripData.foodPreferences.join(", ")
+                    : tripData.foodPreferences}
+                </span>
               </div>
             </div>
           </div>

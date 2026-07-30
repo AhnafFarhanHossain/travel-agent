@@ -16,6 +16,7 @@ export enum TripPreferences {
   foodAndCulinary = "Food and Culinary",
   roadTrip = "Road Trip",
   skiOrSnowboardTrip = "Ski or Snowboard Trip",
+  letTheAIPick = "Let the AI Pick",
 }
 
 export enum FoodPreferences {
@@ -53,8 +54,12 @@ export const tripFormSchema = z
       .number()
       .min(100, "Minimum budget is $100")
       .max(50000, "Maximum budget is $50,000"),
-    tripPreferences: z.nativeEnum(TripPreferences),
-    foodPreferences: z.nativeEnum(FoodPreferences),
+    tripPreferences: z
+      .array(z.nativeEnum(TripPreferences))
+      .min(1, "Please select at least one trip preference"),
+    foodPreferences: z
+      .array(z.nativeEnum(FoodPreferences))
+      .min(1, "Please select at least one food preference"),
     preferStayingIn: z.nativeEnum(PreferStayingIn),
   })
   .refine(
@@ -67,7 +72,7 @@ export const tripFormSchema = z
     {
       message: "Check-out date must be on or after check-in date",
       path: ["endDate"],
-    }
+    },
   );
 
 export type TripFormData = z.infer<typeof tripFormSchema>;
@@ -78,7 +83,7 @@ export const defaultTripValues: TripFormData = {
   endDate: "",
   noOfPeople: 1,
   budget: 1000,
-  tripPreferences: TripPreferences.niche,
-  foodPreferences: FoodPreferences.vegetarian,
+  tripPreferences: [TripPreferences.niche],
+  foodPreferences: [FoodPreferences.vegetarian],
   preferStayingIn: PreferStayingIn.hotel,
 };

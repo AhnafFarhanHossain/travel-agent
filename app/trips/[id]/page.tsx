@@ -283,6 +283,9 @@ export default function TripDetailPage({
 
       if (!res.ok) {
         const data = await res.json();
+        if (data.length <= 0) {
+          throw new Error("No itinerary data to save.");
+        }
         if (res.status === 429) {
           throw new Error("AI Rate Limit Exceeded (429). Please wait a moment before saving changes.");
         }

@@ -6,7 +6,6 @@ import { DefaultChatTransport, UIMessage } from "ai";
 import { Itinerary } from "@/lib/schemas/itenerary";
 import { Snapshot } from "@/app/trips/types";
 import { Button } from "@/components/ui/button";
-import { Suggestions, Suggestion } from "@/components/ai-elements/suggestion";
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import {
   SparklesIcon,
@@ -17,11 +16,7 @@ import {
   Loader2Icon,
   CheckCircle2Icon,
   EyeIcon,
-  RefreshCwIcon,
   CheckIcon,
-  Maximize2Icon,
-  Minimize2Icon,
-  AlertTriangleIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,7 +45,9 @@ const isRateLimitError = (err: any) => {
   if (!err) return false;
   const status = err?.status || err?.statusCode || err?.cause?.status;
   if (status === 429) return true;
-  const msg = (err?.message || (typeof err === "string" ? err : "")).toLowerCase();
+  const msg = (
+    err?.message || (typeof err === "string" ? err : "")
+  ).toLowerCase();
   return (
     msg.includes("429") ||
     msg.includes("rate limit") ||
@@ -74,9 +71,6 @@ export function TripChatSidebar({
   onApplySnapshot,
 }: TripChatSidebarProps) {
   const [inputText, setInputText] = useState("");
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isApplyButtonDisabled, setIsApplyButtonDisabled] = useState(false);
-  const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const storageKey = `trip_chat_${tripId}`;
@@ -98,49 +92,60 @@ export function TripChatSidebar({
     [tripId, currentItinerary],
   );
 
-  const { messages, sendMessage, status, error, regenerate, clearError } = useChat({
-    id: tripId,
-    messages: intialMessages,
-    transport,
-    onFinish(event: any) {
-      const message = event?.message || event;
-      const parts = message?.parts || [];
-      const toolInvocations = message?.toolInvocations || (message as any)?.toolCalls || [];
+  const { messages, sendMessage, status, error, regenerate, clearError } =
+    useChat({
+      id: tripId,
+      messages: intialMessages,
+      transport,
+      onFinish(event: any) {
+        const message = event?.message || event;
+        const parts = message?.parts || [];
+        const toolInvocations =
+          message?.toolInvocations || (message as any)?.toolCalls || [];
 
-      for (const toolCall of toolInvocations) {
-        const result = toolCall.result || toolCall.output || toolCall.args;
-        if (result?.newItinerary) {
-          onProposeSnapshot(result.newItinerary, result.summary || "AI Proposed Revision");
-          toast.success("New itinerary revision proposed!", {
-            description: "Preview or apply it directly on your trip timeline.",
+        for (const toolCall of toolInvocations) {
+          const result = toolCall.result || toolCall.output || toolCall.args;
+          if (result?.newItinerary) {
+            onProposeSnapshot(
+              result.newItinerary,
+              result.summary || "AI Proposed Revision",
+            );
+            toast.success("New itinerary revision proposed!", {
+              description:
+                "Preview or apply it directly on your trip timeline.",
+            });
+          }
+        }
+
+        for (const part of parts) {
+          const result = part.result || part.output || part.args;
+          if (result?.newItinerary) {
+            onProposeSnapshot(
+              result.newItinerary,
+              result.summary || "AI Proposed Revision",
+            );
+          }
+        }
+      },
+      onError(error: any) {
+        console.error("Chat error:", error);
+        if (isRateLimitError(error)) {
+          const msg =
+            error?.message ||
+            "AI rate limit reached (429). Please wait a moment before trying again.";
+          setRateLimitError(msg);
+          toast.error("AI Rate Limit Reached (429)", {
+            description:
+              "You've sent too many requests. Please wait a moment and try again.",
+          });
+        } else {
+          toast.error("Failed to process request", {
+            description:
+              error?.message || "Please check your network connection.",
           });
         }
-      }
-
-      for (const part of parts) {
-        const result = part.result || part.output || part.args;
-        if (result?.newItinerary) {
-          onProposeSnapshot(result.newItinerary, result.summary || "AI Proposed Revision");
-        }
-      }
-    },
-    onError(error: any) {
-      console.error("Chat error:", error);
-      if (isRateLimitError(error)) {
-        const msg =
-          error?.message ||
-          "AI rate limit reached (429). Please wait a moment before trying again.";
-        setRateLimitError(msg);
-        toast.error("AI Rate Limit Reached (429)", {
-          description: "You've sent too many requests. Please wait a moment and try again.",
-        });
-      } else {
-        toast.error("Failed to process request", {
-          description: error?.message || "Please check your network connection.",
-        });
-      }
-    },
-  });
+      },
+    });
 
   // set the previous messages with AI to messages for persistent data
   useEffect(() => {
@@ -173,89 +178,72 @@ export function TripChatSidebar({
 
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-50 flex flex-col bg-background/40 backdrop-blur-xl shadow-2xl transition-all duration-300 ${
-        isExpanded
-          ? "h-[92vh] sm:h-[640px] sm:w-[540px] sm:bottom-6 sm:right-6 sm:left-auto sm:rounded-3xl sm:border sm:border-border/40"
-          : "h-[82vh] max-h-[600px] sm:h-[520px] sm:w-[420px] sm:bottom-6 sm:right-6 sm:left-auto sm:rounded-3xl sm:border sm:border-border/40"
-      }`}
+      className="fixed inset-x-0 bottom-0 z-50 flex h-[82vh] max-h-[600px] flex-col bg-background/90 backdrop-blur-xl shadow-2xl border border-border/40 sm:bottom-6 sm:right-6 sm:left-auto sm:w-[420px] sm:rounded-3xl"
       aria-label="AI Travel Assistant"
     >
-      {/* Mobile Touch Bar Drag Handle */}
-      <div className="w-10 h-1 bg-muted/60 rounded-full mx-auto my-2 sm:hidden" />
-
-      {/* Ultra-Minimal Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border/20">
-        <div className="flex items-center gap-2">
-          <SparklesIcon className="size-4 text-amber-500" />
-          <span className="font-heading text-sm font-bold text-foreground">AI Concierge</span>
-          <span className="text-muted-foreground/30">•</span>
-          <span className="text-xs font-medium text-muted-foreground truncate max-w-[140px]">{destination}</span>
+      <div className="flex items-center justify-between border-b border-border/30 px-4 py-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex size-7 items-center justify-center rounded-full bg-muted/60">
+            <SparklesIcon className="size-3.5 text-amber-500" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-foreground leading-none">
+              AI Concierge
+            </div>
+            <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {destination}
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 rounded-full text-muted-foreground hover:text-foreground hidden sm:flex"
-            onClick={() => setIsExpanded(!isExpanded)}
-            title={isExpanded ? "Collapse" : "Expand"}
-          >
-            {isExpanded ? <Minimize2Icon className="size-3.5" /> : <Maximize2Icon className="size-3.5" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 rounded-full text-muted-foreground hover:text-foreground"
-            onClick={onClose}
-            title="Close Assistant"
-          >
-            <XIcon className="size-4" />
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 rounded-full text-muted-foreground hover:text-foreground"
+          onClick={onClose}
+          title="Close"
+        >
+          <XIcon className="size-4" />
+        </Button>
       </div>
 
-      {/* Snapshot Revisions Strip */}
       {snapshots.length > 0 && (
-        <div className="px-4 py-1.5 bg-muted/10 border-b border-border/20">
-          <Suggestions className="gap-1.5">
-            <span className="text-[11px] font-medium text-muted-foreground shrink-0 flex items-center gap-1 pr-1">
-              <RefreshCwIcon className="size-3 text-muted-foreground" />
-              Revisions:
-            </span>
+        <div className="border-b border-border/20 px-4 py-2">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {snapshots.map((snap, idx) => {
               const isActive = activeSnapshot?.id === snap.id;
               return (
-                <Suggestion
+                <button
                   key={snap.id}
-                  suggestion={`#${snapshots.length - idx} ${snap.status === "draft" ? "(Draft)" : "(Saved)"}`}
+                  type="button"
                   onClick={() => onSelectSnapshot(snap)}
-                  variant={isActive ? "default" : "outline"}
-                  size="xs"
-                  className={`text-[11px] h-6 px-2.5 font-medium border-none rounded-full ${
+                  className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
                     isActive
-                      ? "bg-foreground text-background"
-                      : "bg-muted/30 text-muted-foreground hover:text-foreground"
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border/60 bg-background text-muted-foreground hover:text-foreground"
                   }`}
-                />
+                >
+                  {snap.status === "draft" ? "Draft" : "Saved"}{" "}
+                  {snapshots.length - idx}
+                </button>
               );
             })}
-          </Suggestions>
+          </div>
         </div>
       )}
 
-      {/* Messages List */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[200px] text-center space-y-3 px-2 py-8">
-            <div className="size-10 rounded-full bg-muted/40 flex items-center justify-center text-muted-foreground">
-              <BotIcon className="size-5 text-primary" />
+          <div className="flex min-h-[220px] flex-col items-center justify-center text-center">
+            <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-muted/50">
+              <BotIcon className="size-5 text-foreground" />
             </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">How can I adjust your itinerary?</h3>
-              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-                Ask to rebalance budget, swap activities, or refine daily pacing.
-              </p>
-            </div>
+            <p className="text-sm font-medium text-foreground">
+              Ask for a revision
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Adjust budget, pace, or activities.
+            </p>
           </div>
         ) : (
           messages.map((m: UIMessage) => {
@@ -283,92 +271,99 @@ export function TripChatSidebar({
 
             return (
               <Message key={m.id} from={m.role}>
-                <div className={`flex gap-3 text-sm ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+                <div
+                  className={`flex gap-3 text-sm ${isUser ? "flex-row-reverse" : "flex-row"}`}
+                >
                   <div
-                    className={`size-7 rounded-full flex items-center justify-center shrink-0 text-xs font-medium ${
-                      isUser ? "bg-foreground text-background" : "bg-muted text-foreground"
+                    className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs ${
+                      isUser
+                        ? "bg-foreground text-background"
+                        : "bg-muted text-foreground"
                     }`}
                   >
-                    {isUser ? <UserIcon className="size-3.5" /> : <BotIcon className="size-3.5" />}
+                    {isUser ? (
+                      <UserIcon className="size-3.5" />
+                    ) : (
+                      <BotIcon className="size-3.5" />
+                    )}
                   </div>
 
-                  <div className="space-y-2 max-w-[85%]">
-                    {/* Ultra-Minimal Text Bubble */}
+                  <div className="max-w-[85%] space-y-2">
                     {textContent && (
                       <MessageContent
-                        className={`px-4 py-2.5 text-sm leading-relaxed border-none ${
+                        className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed border ${
                           isUser
-                            ? "bg-foreground text-background rounded-2xl font-medium"
-                            : "text-foreground rounded-2xl bg-muted/20"
+                            ? "border-transparent bg-foreground text-background"
+                            : "border-border/40 bg-muted/20 text-foreground"
                         }`}
                       >
                         {textContent}
                       </MessageContent>
                     )}
 
-                    {/* Minimal Tool Call Card */}
                     {toolCalls.map((toolCall: any, tIdx: number) => {
-                      const result = toolCall.result || toolCall.output || toolCall.args;
-                      const newItinerary: Itinerary | undefined = result?.newItinerary;
-                      const summaryText = result?.summary || toolCall.summary || "Itinerary revision generated";
+                      const result =
+                        toolCall.result || toolCall.output || toolCall.args;
+                      const newItinerary: Itinerary | undefined =
+                        result?.newItinerary;
+                      const summaryText = result?.summary || "Revision ready";
 
                       return (
-                        <div key={`tool-${tIdx}`} className="rounded-2xl bg-muted/20 p-3.5 space-y-2 text-left">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium text-foreground flex items-center gap-1.5 text-xs">
-                              <CheckCircle2Icon className="size-3.5 text-emerald-500" />
-                              Revision Proposed
-                            </span>
+                        <div
+                          key={`tool-${tIdx}`}
+                          className="rounded-2xl border border-border/40 bg-muted/15 p-3 space-y-2"
+                        >
+                          <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                            <CheckCircle2Icon className="size-3.5 text-emerald-500" />
+                            Revision
                           </div>
 
                           {summaryText && (
-                            <p className="text-xs text-muted-foreground leading-relaxed">{summaryText}</p>
+                            <p className="text-xs leading-relaxed text-muted-foreground">
+                              {summaryText}
+                            </p>
                           )}
 
                           {newItinerary && (
-                            <div className="flex items-center justify-between text-xs font-mono pt-1">
-                              <span className="text-muted-foreground text-[11px]">New Est. Total:</span>
-                              <span className="font-bold text-foreground">
-                                ${newItinerary.estimatedTotalCost?.toLocaleString()} USD
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                              <span>Estimated total</span>
+                              <span className="font-medium text-foreground">
+                                $
+                                {newItinerary.estimatedTotalCost?.toLocaleString()}{" "}
+                                USD
                               </span>
                             </div>
                           )}
 
-                          {newItinerary && (
-                            <div className="flex gap-2 pt-1">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                disabled={isApplyButtonDisabled}
-                                className="flex-1 text-xs h-7 border-none bg-background rounded-full"
-                                onClick={() => {
-                                  onProposeSnapshot(newItinerary, summaryText);
-                                }}
-                              >
-                                <EyeIcon className="size-3.5 mr-1 text-primary" />
-                                Preview
-                              </Button>
-                              <Button
-                                size="xs"
-                                className="flex-1 text-xs h-7 rounded-full"
-                                disabled={isApplyButtonDisabled}
-                                onClick={() => {
-                                  onProposeSnapshot(newItinerary, summaryText);
-                                  onApplySnapshot({
-                                    id: `snap-ai-${Date.now()}`,
-                                    description: summaryText,
-                                    timestamp: new Date().toISOString(),
-                                    itinerary: newItinerary,
-                                    status: "draft",
-                                  });
-                                  setIsApplyButtonDisabled(true);
-                                }}
-                              >
-                                <CheckIcon className="size-3.5 mr-1" />
-                                Apply
-                              </Button>
-                            </div>
-                          )}
+                          {newItinerary &&
+                            activeSnapshot?.status === "draft" && (
+                              <div className="flex gap-2 pt-1">
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className="h-7 flex-1 rounded-full border-border/60 bg-background text-xs"
+                                  onClick={() =>
+                                    onProposeSnapshot(newItinerary, summaryText)
+                                  }
+                                >
+                                  <EyeIcon className="mr-1 size-3.5" />
+                                  Preview
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  className="h-7 flex-1 rounded-full text-xs"
+                                  onClick={() => {
+                                    onProposeSnapshot(
+                                      newItinerary,
+                                      summaryText,
+                                    );
+                                  }}
+                                >
+                                  <CheckIcon className="mr-1 size-3.5" />
+                                  Apply
+                                </Button>
+                              </div>
+                            )}
                         </div>
                       );
                     })}
@@ -380,74 +375,16 @@ export function TripChatSidebar({
         )}
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 rounded-lg w-fit">
-            <Loader2Icon className="size-3.5 animate-spin text-primary" />
-            <span>AI Concierge is thinking...</span>
-          </div>
-        )}
-
-        {(rateLimitError || isRateLimitError(error)) && (
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 space-y-2 text-left animate-in fade-in duration-200">
-            <div className="flex items-center justify-between gap-2 text-amber-700 dark:text-amber-400 font-semibold text-xs">
-              <span className="flex items-center gap-1.5">
-                <AlertTriangleIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                AI Rate Limit Reached (429)
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {rateLimitError ||
-                error?.message ||
-                "You have hit the AI request rate limit. Please wait a moment before sending another message."}
-            </p>
-            <div className="flex items-center gap-2 pt-1">
-              {regenerate && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  className="text-xs h-7 border-amber-500/30 bg-background text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 rounded-full"
-                  onClick={() => {
-                    setRateLimitError(null);
-                    if (clearError) clearError();
-                    regenerate();
-                  }}
-                >
-                  <RefreshCwIcon className="size-3 mr-1" />
-                  Retry Request
-                </Button>
-              )}
-              <Button
-                size="xs"
-                variant="ghost"
-                className="text-xs h-7 text-muted-foreground hover:text-foreground rounded-full"
-                onClick={() => setRateLimitError(null)}
-              >
-                Dismiss
-              </Button>
-            </div>
+          <div className="flex w-fit items-center gap-2 rounded-full border border-border/40 bg-muted/15 px-3 py-2 text-xs text-muted-foreground">
+            <Loader2Icon className="size-3.5 animate-spin text-foreground" />
+            Thinking
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Prompts Suggestions */}
-      <div className="px-4 py-2 border-t border-border/20 bg-muted/10">
-        <Suggestions className="gap-1.5">
-          {QUICK_PROMPTS.map((promptText, idx) => (
-            <Suggestion
-              key={`qp-${idx}`}
-              suggestion={promptText}
-              onClick={() => handleSend(promptText)}
-              variant="outline"
-              size="xs"
-              className="text-xs h-6.5 border-none bg-background text-muted-foreground hover:text-foreground shrink-0 rounded-full shadow-2xs"
-            />
-          ))}
-        </Suggestions>
-      </div>
-
-      {/* Bubble Prompt Input Footer — No Borders */}
-      <div className="p-3 bg-background">
+      <div className="border-t border-border/30 bg-background p-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -458,15 +395,15 @@ export function TripChatSidebar({
           <input
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask AI to customize your trip..."
-            className="w-full rounded-full border-none bg-muted/40 px-4 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all"
+            placeholder="Ask for a revision..."
+            className="w-full rounded-full border border-border/40 bg-muted/30 px-4 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-foreground/15"
             disabled={isLoading}
           />
           <Button
             type="submit"
             size="icon"
             disabled={isLoading || !inputText.trim()}
-            className="absolute right-1.5 size-7 rounded-full bg-foreground text-background hover:opacity-90 disabled:opacity-30 transition-opacity"
+            className="absolute right-1.5 size-7 rounded-full bg-foreground text-background hover:opacity-90 disabled:opacity-30"
           >
             <SendIcon className="size-3.5" />
           </Button>

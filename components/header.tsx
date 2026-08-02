@@ -4,7 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { UserIcon, PlusIcon, LayoutDashboardIcon, MessageSquareIcon, LogOutIcon, LogInIcon, UserPlusIcon } from "lucide-react";
+import {
+  UserIcon,
+  PlusIcon,
+  LayoutDashboardIcon,
+  MessageSquareIcon,
+  LogOutIcon,
+  LogInIcon,
+  UserPlusIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -34,15 +42,10 @@ export function Header() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-6">
-          <Link href={session?.user ? "/dashboard" : "/"} className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-            <Image
-              src="/kova-icon.png"
-              alt="Kova Icon"
-              width={28}
-              height={28}
-              className="size-7 rounded-lg object-contain shadow-2xs"
-              priority
-            />
+          <Link
+            href={session?.user ? "/dashboard" : "/"}
+            className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
+          >
             <Image
               src="/kova-logo-black.png"
               alt="Kova - Personal AI Travel Agent"
@@ -75,18 +78,6 @@ export function Header() {
               >
                 <LayoutDashboardIcon className="size-3.5" />
                 Dashboard
-              </Link>
-              <Link
-                href="/chat"
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  pathname === "/chat"
-                    ? "bg-muted text-foreground font-semibold"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                )}
-              >
-                <MessageSquareIcon className="size-3.5" />
-                AI Assistant
               </Link>
             </nav>
           )}

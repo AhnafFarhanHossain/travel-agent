@@ -130,3 +130,69 @@
   }
 }
 
+@page {
+  size: auto;
+  margin: 0mm;
+}
+
+@media print {
+  body {
+    padding: 12mm 16mm !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html.dark,
+  html.dark body,
+  .dark,
+  .dark body {
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
+    color-scheme: dark !important;
+  }
+
+  html:not(.dark),
+  html:not(.dark) body,
+  :not(.dark) body {
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
+    color-scheme: light !important;
+  }
+
+  header,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 2rem !important;
+  }
+
+  a {
+    text-decoration: underline !important;
+  }
+
+  .shadow-2xs,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: none !important;
+  }
+}
+

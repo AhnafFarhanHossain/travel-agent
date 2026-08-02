@@ -173,7 +173,7 @@ export function TripChatSidebar({
 
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-50 flex flex-col bg-background/40 backdrop-blur-xl shadow-2xl transition-all duration-300 ${
+      className={`fixed inset-x-0 bottom-0 z-50 flex flex-col bg-background/40 backdrop-blur-xl shadow-2xl transition-all duration-300 print:hidden ${
         isExpanded
           ? "h-[92vh] sm:h-[640px] sm:w-[540px] sm:bottom-6 sm:right-6 sm:left-auto sm:rounded-3xl sm:border sm:border-border/40"
           : "h-[82vh] max-h-[600px] sm:h-[520px] sm:w-[420px] sm:bottom-6 sm:right-6 sm:left-auto sm:rounded-3xl sm:border sm:border-border/40"

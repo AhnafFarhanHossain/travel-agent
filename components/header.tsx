@@ -30,7 +30,7 @@ export function Header() {
       : null;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/90 backdrop-blur-md print:hidden">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-6">

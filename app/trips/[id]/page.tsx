@@ -277,16 +277,25 @@ export default function TripDetailPage({
 
   // AI Snapshot handlers
   const handleProposeSnapshot = useCallback((newItinerary: Itinerary, summary: string) => {
-    const newSnap: Snapshot = {
-      id: `snap-ai-${Date.now()}`,
-      description: summary || "AI Revision",
-      timestamp: new Date().toISOString(),
-      itinerary: newItinerary,
-      status: "draft",
-    };
-
-    setSnapshots((prev) => [newSnap, ...prev]);
-    setActiveSnapshot(newSnap);
+    if (!newItinerary) return;
+    setSnapshots((prev) => {
+      const existing = prev.find(
+        (s) => s.itinerary && JSON.stringify(s.itinerary) === JSON.stringify(newItinerary)
+      );
+      if (existing) {
+        setActiveSnapshot(existing);
+        return prev;
+      }
+      const newSnap: Snapshot = {
+        id: `snap-ai-${Date.now()}`,
+        description: summary || "AI Revision",
+        timestamp: new Date().toISOString(),
+        itinerary: newItinerary,
+        status: "draft",
+      };
+      setActiveSnapshot(newSnap);
+      return [newSnap, ...prev];
+    });
   }, []);
 
   const handleSelectSnapshot = useCallback((snapshot: Snapshot) => {
@@ -294,6 +303,11 @@ export default function TripDetailPage({
   }, []);
 
   const handleApplySnapshot = async (snapshot: Snapshot) => {
+    if (!snapshot || !snapshot.itinerary) {
+      toast.error("No valid itinerary to apply.");
+      return;
+    }
+
     try {
       setIsApplying(true);
       const res = await fetch(`/api/trips/${id}`, {
@@ -303,11 +317,11 @@ export default function TripDetailPage({
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({ message: "Failed to parse response" }));
         if (res.status === 429) {
           throw new Error("AI Rate Limit Exceeded (429). Please wait a moment before saving changes.");
         }
-        throw new Error(data.message || "Failed to save itinerary changes");
+        throw new Error(data?.message || "Failed to save itinerary changes");
       }
 
       const updatedSnap: Snapshot = {
@@ -317,7 +331,14 @@ export default function TripDetailPage({
 
       setSavedItinerary(snapshot.itinerary);
       setActiveSnapshot(updatedSnap);
-      setSnapshots((prev) => prev.map((s) => (s.id === snapshot.id ? updatedSnap : s)));
+      setSnapshots((prev) => {
+        const exists = prev.some((s) => s.id === snapshot.id);
+        if (exists) {
+          return prev.map((s) => (s.id === snapshot.id ? updatedSnap : { ...s, status: s.status === "applied" ? "draft" : s.status }));
+        }
+        return [updatedSnap, ...prev.map((s) => ({ ...s, status: s.status === "applied" ? "draft" : s.status }))];
+      });
+
       if (trip) {
         setTrip({ ...trip, itinerary: snapshot.itinerary });
       }
@@ -784,6 +805,7 @@ export default function TripDetailPage({
         activeSnapshot={activeSnapshot}
         snapshots={snapshots}
         isOpen={sidebarOpen}
+        isApplying={isApplying}
         onClose={() => setSidebarOpen(false)}
         onProposeSnapshot={handleProposeSnapshot}
         onSelectSnapshot={handleSelectSnapshot}

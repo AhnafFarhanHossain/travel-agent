@@ -75,3 +75,61 @@ export async function DELETE(
   }
 }
 
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await connectDB();
+
+    if (!id || id.length !== 24) {
+      return NextResponse.json(
+        { message: "Invalid trip ID format" },
+        { status: 400 }
+      );
+    }
+
+    const session = await auth();
+    const query: any = { _id: id };
+    if (session?.user?.id) {
+      query.userId = session.user.id;
+    }
+
+    const body = await req.json();
+    const itinerary = body?.itinerary;
+
+    if (!itinerary) {
+      return NextResponse.json(
+        { message: "Itinerary data is required" },
+        { status: 400 }
+      );
+    }
+
+    const updatedTrip = await Trip.findOneAndUpdate(
+      query,
+      { $set: { itinerary } },
+      { new: true }
+    ).lean();
+
+    if (!updatedTrip) {
+      return NextResponse.json(
+        { message: "Trip not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      trip: updatedTrip,
+    });
+  } catch (error: any) {
+    console.error("Error updating trip itinerary:", error);
+    return NextResponse.json(
+      { message: "Failed to update trip itinerary" },
+      { status: 500 }
+    );
+  }
+}
+
+

@@ -33,6 +33,7 @@ interface TripChatSidebarProps {
   activeSnapshot: Snapshot | null;
   snapshots: Snapshot[];
   isOpen: boolean;
+  isApplying?: boolean;
   onClose: () => void;
   onProposeSnapshot: (newItinerary: Itinerary, summary: string) => void;
   onSelectSnapshot: (snapshot: Snapshot) => void;
@@ -68,6 +69,7 @@ export function TripChatSidebar({
   activeSnapshot,
   snapshots,
   isOpen,
+  isApplying = false,
   onClose,
   onProposeSnapshot,
   onSelectSnapshot,
@@ -75,7 +77,6 @@ export function TripChatSidebar({
 }: TripChatSidebarProps) {
   const [inputText, setInputText] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isApplyButtonDisabled, setIsApplyButtonDisabled] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -261,7 +262,7 @@ export function TripChatSidebar({
           messages.map((m: UIMessage) => {
             const isUser = m.role === "user";
             const parts = (m as any).parts || [];
-            const toolInvocations = (m as any).toolInvocations || [];
+            const rawToolInvocations = (m as any).toolInvocations || [];
 
             let textContent = (m as any).content || "";
             if (!textContent && parts.length > 0) {
@@ -271,15 +272,26 @@ export function TripChatSidebar({
                 .join("\n");
             }
 
-            const toolCalls = [
-              ...toolInvocations,
-              ...parts.filter(
+            const toolCallsFromParts = parts
+              .filter(
                 (p: any) =>
-                  p.toolName === "proposeItineraryRevision" ||
-                  p.toolName === "updateSpecificActivity" ||
-                  (p.type && p.type.includes("tool")),
-              ),
-            ];
+                  p.type === "tool-invocation" || (p.type && typeof p.type === "string" && p.type.startsWith("tool-")),
+              )
+              .map((p: any) => p.toolInvocation || p);
+
+            const combinedToolCalls = [...rawToolInvocations, ...toolCallsFromParts];
+            const seenToolIds = new Set<string>();
+            const toolCalls: any[] = [];
+            for (const tc of combinedToolCalls) {
+              const inv = tc.toolInvocation || tc;
+              const id = inv.toolCallId || inv.id || (inv.args ? JSON.stringify(inv.args) : null);
+              if (id && !seenToolIds.has(id)) {
+                seenToolIds.add(id);
+                toolCalls.push(tc);
+              } else if (!id) {
+                toolCalls.push(tc);
+              }
+            }
 
             return (
               <Message key={m.id} from={m.role}>
@@ -308,9 +320,35 @@ export function TripChatSidebar({
 
                     {/* Minimal Tool Call Card */}
                     {toolCalls.map((toolCall: any, tIdx: number) => {
-                      const result = toolCall.result || toolCall.output || toolCall.args;
-                      const newItinerary: Itinerary | undefined = result?.newItinerary;
-                      const summaryText = result?.summary || toolCall.summary || "Itinerary revision generated";
+                      const inv = toolCall.toolInvocation || toolCall;
+                      const result = inv.result || inv.output || inv.args;
+                      const newItinerary: Itinerary | undefined = result?.newItinerary || inv.args?.newItinerary;
+                      const summaryText =
+                        result?.summary || inv.args?.summary || inv.summary || "Itinerary revision generated";
+
+                      if (!newItinerary) {
+                        return (
+                          <div key={`tool-${tIdx}`} className="rounded-2xl bg-muted/20 p-3.5 space-y-1 text-left">
+                            <span className="font-medium text-foreground flex items-center gap-1.5 text-xs">
+                              <CheckCircle2Icon className="size-3.5 text-emerald-500" />
+                              {summaryText}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      const existingSnap = snapshots.find(
+                        (s) => s.itinerary && JSON.stringify(s.itinerary) === JSON.stringify(newItinerary),
+                      );
+
+                      const isApplied =
+                        (existingSnap && existingSnap.status === "applied") ||
+                        (activeSnapshot?.status === "applied" &&
+                          JSON.stringify(activeSnapshot?.itinerary) === JSON.stringify(newItinerary));
+
+                      const isPreviewing =
+                        activeSnapshot &&
+                        JSON.stringify(activeSnapshot.itinerary) === JSON.stringify(newItinerary);
 
                       return (
                         <div key={`tool-${tIdx}`} className="rounded-2xl bg-muted/20 p-3.5 space-y-2 text-left">
@@ -319,56 +357,63 @@ export function TripChatSidebar({
                               <CheckCircle2Icon className="size-3.5 text-emerald-500" />
                               Revision Proposed
                             </span>
+                            {isApplied && (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                Applied
+                              </span>
+                            )}
                           </div>
 
                           {summaryText && (
                             <p className="text-xs text-muted-foreground leading-relaxed">{summaryText}</p>
                           )}
 
-                          {newItinerary && (
-                            <div className="flex items-center justify-between text-xs font-mono pt-1">
-                              <span className="text-muted-foreground text-[11px]">New Est. Total:</span>
-                              <span className="font-bold text-foreground">
-                                ${newItinerary.estimatedTotalCost?.toLocaleString()} USD
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-center justify-between text-xs font-mono pt-1">
+                            <span className="text-muted-foreground text-[11px]">New Est. Total:</span>
+                            <span className="font-bold text-foreground">
+                              ${newItinerary.estimatedTotalCost?.toLocaleString()} USD
+                            </span>
+                          </div>
 
-                          {newItinerary && (
-                            <div className="flex gap-2 pt-1">
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                disabled={isApplyButtonDisabled}
-                                className="flex-1 text-xs h-7 border-none bg-background rounded-full"
-                                onClick={() => {
+                          <div className="flex gap-2 pt-1">
+                            <Button
+                              size="xs"
+                              variant={isPreviewing ? "default" : "outline"}
+                              disabled={isApplying}
+                              className={`flex-1 text-xs h-7 rounded-full ${
+                                isPreviewing ? "" : "border-none bg-background text-foreground"
+                              }`}
+                              onClick={() => {
+                                if (existingSnap) {
+                                  onSelectSnapshot(existingSnap);
+                                } else {
                                   onProposeSnapshot(newItinerary, summaryText);
-                                }}
-                              >
-                                <EyeIcon className="size-3.5 mr-1 text-primary" />
-                                Preview
-                              </Button>
-                              <Button
-                                size="xs"
-                                className="flex-1 text-xs h-7 rounded-full"
-                                disabled={isApplyButtonDisabled}
-                                onClick={() => {
-                                  onProposeSnapshot(newItinerary, summaryText);
-                                  onApplySnapshot({
-                                    id: `snap-ai-${Date.now()}`,
-                                    description: summaryText,
-                                    timestamp: new Date().toISOString(),
-                                    itinerary: newItinerary,
-                                    status: "draft",
-                                  });
-                                  setIsApplyButtonDisabled(true);
-                                }}
-                              >
-                                <CheckIcon className="size-3.5 mr-1" />
-                                Apply
-                              </Button>
-                            </div>
-                          )}
+                                }
+                              }}
+                            >
+                              <EyeIcon className="size-3.5 mr-1" />
+                              {isPreviewing ? "Previewing" : "Preview"}
+                            </Button>
+                            <Button
+                              size="xs"
+                              className="flex-1 text-xs h-7 rounded-full"
+                              disabled={isApplying || isApplied}
+                              variant={isApplied ? "secondary" : "default"}
+                              onClick={() => {
+                                const snapToApply: Snapshot = existingSnap || {
+                                  id: `snap-ai-${Date.now()}`,
+                                  description: summaryText,
+                                  timestamp: new Date().toISOString(),
+                                  itinerary: newItinerary,
+                                  status: "draft",
+                                };
+                                onApplySnapshot(snapToApply);
+                              }}
+                            >
+                              <CheckIcon className="size-3.5 mr-1" />
+                              {isApplied ? "Applied" : "Apply"}
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
